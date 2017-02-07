@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css?family=Droid+Serif" rel="stylesheet">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" type="text/css" href="/css/instructions.css">
+</head>
+<body>
+<div class="container">
+	<div class="row">
+		<!-- Carousel -->
+    	<div id="carousel-example-generic" class="carousel slide" data-ride="carousel" data-interval="false" data-wrap="false">
+			<!-- Indicators -->
+			<ol class="carousel-indicators">
+                {% for page in instructions %}
+                    {% if loop.first %}
+			  	        <li data-target="#carousel-example-generic" data-slide-to="0" class="active"></li>
+                    {% else %}
+			            <li data-target="#carousel-example-generic" data-slide-to="{{ loop.index0 }}"></li>
+                    {% endif %}
+                {% endfor %}
+			</ol>
+			<!-- Wrapper for slides -->
+			<div class="carousel-inner">
+                {% for page in instructions %}
+                    {% if loop.first %}
+			            <div class="item active">
+                    {% else %}
+                        <div class="item">
+                    {% endif %}
+			    	<img src="/images/instructions_background.png">
+                    <!-- Static Header -->
+                    <div class="header-text hidden-xs">
+                        <div class="col-md-12 text-center">
+                            <h2><span>
+                            	{{ page.title|safe }}
+
+                            </span></h2>
+                            <br>
+                            	{{ page.text|safe }}
+                            {% if page.buttons %}
+                                <div class="">
+                                {% for button in page.buttons %}
+                                    {{ button|safe }}
+                                {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div><!-- /header-text -->
+			    </div>
+                {% endfor %}
+			</div>
+			<!-- Controls -->
+			<a class="left carousel-control" href="#carousel-example-generic" data-slide="prev">
+		    	<span class="glyphicon glyphicon-chevron-left"></span>
+			</a>
+			<a class="right carousel-control" href="#carousel-example-generic" data-slide="next">
+		    	<span class="glyphicon glyphicon-chevron-right"></span>
+			</a>
+		</div><!-- /carousel -->
+	</div>
+</div>
+</body>
+</html>

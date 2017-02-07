@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" type="text/css" href="/css/information_styles.css">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <!-- Bootstrap JS -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="/js/session_functions.js"></script>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row col-md-10 col-md-offset-1">
+        <label for="graduation">Experiment Name:</label>
+        <input type="text" class="form-control" id="name">
+        <button class="btn btn-default" onclick=generateExperiment()>Generate</button>
+        <button class="btn btn-default" onclick=getExperiment()>Get</button>
+        <button class="btn btn-default" onclick=resetExperiment()>Reset</button>
+        <a class="btn btn-default" href="/admin/list_participants/?experiment={{ experiment }}">List Participants</a>
+        <a class="btn btn-default" href="/admin/generate_fake_participants/?experiment={{ experiment }}">Generate Fake Participants</a>
+    </div>
+    <div class="col-xs-12" style="height:50px;"></div>
+    <div class="row col-md-10 col-md-offset-1">
+        <ol>
+            <li>Once everybody is logged in, randomize the treatments.</li>
+            <li>Read risk instructions</li>
+            <li>Enable risk</li>
+            <li>Once everybody is done with risk, read tutorial instructions</li>
+            <li>Enable tutorial</li>
+            <li>Once tutorial complete, read practice instructions</li>
+            <li>Enable practice</li>
+        </ol>
+        <table class="table table-sm table-hover" id="table_results">
+            <tr>
+                <td>Logged In:</td>
+                <td>Command</td>
+                {% for item in list_of_participants %}
+                    <td>
+                    {{ item.name }}
+                    </td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>Welcome Screen</td>
+                <td><a class="btn btn-default" href="/admin/randomize_treatment/?experiment={{ experiment }}">Randomize Treatments</a></td>
+                {% for item in list_of_participants %}
+                    <td>
+                    {{ item.welcome_status }}
+                    </td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>Risk Assessment</td>
+                <td><a class="btn btn-default" href="/admin/enable_risk_assessment/?experiment={{ experiment }}">Enable Risk</a></td>
+                {% for item in list_of_participants %}
+                    <td>
+                    {{ item.risk_status }}
+                    </td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>Tutorial</td>
+                <td><a class="btn btn-default" href="/admin/enable_tutorial/?experiment={{ experiment }}">Enable Tutorial</a></td>
+                {% for item in list_of_participants %}
+                    <td>
+                    {{ item.tutorial_status }}
+                    </td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>Fixed Payment</td>
+                <td><a class="btn btn-default" href="/admin/enable_practice/?experiment={{ experiment }}">Enable Practice</a></td>
+                {% for item in list_of_participants %}
+                    <td>
+                    {{ item.practice_status }}
+                    </td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>Treatment 1</td>
+                <td><a class="btn btn-default" href="/admin/enable_session/?experiment={{ experiment }}">Enable Session</a></td>
+                {% for item in list_of_participants %}
+                    <td>
+                    {{ item.t1.rounds }} of {{ item.t1.total }}
+                    </td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>Treatment 2</td>
+                <td></td>
+                {% for item in list_of_participants %}
+                    <td>
+                    {{ item.t2.rounds }} of {{ item.t2.total }}
+                    </td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>Survey</td>
+                <td><a class="btn btn-default" href="/admin/enable_survey/?experiment={{ experiment }}">Enable Survey</a></td>
+                {% for item in list_of_participants %}
+                    <td>
+                    {{ item.survey_status }}
+                    </td>
+                {% endfor %}
+            </tr>
+        </table>
+    </div>
+    <div class="row col-md-10 col-md-offset-1">
+    {% for item in list_of_instructions %}
+        <br>
+        <h3>{{ item[0] }}</h3>
+        <p>{{ item[1] | safe}}</p>
+        <br>
+    {% endfor %}
+    </div>
+</div>
+</body>
+</html>

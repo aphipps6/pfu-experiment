@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Generate Sessions</title>
+</head>
+<body>
+Number of questions in database: {{ questions_in_database }}
+
+<form action="/session_generator/?action=generate_questions" method="post">
+    Question class: <input type="text" name="question_class_to_generate" value="{{ default_question_class }}"><br>
+    Number of questions: <input type="text" name="number_of_questions_to_generate"><br>
+    Question Difficulty: <input type="radio" name="question_difficulty" value="easy" checked> Easy<br>
+                            <input type="radio" name="question_difficulty" value="hard"> Hard<br>
+                            <input type="radio" name="question_difficulty" value="both"> Both<br><br>
+    <input type="submit" value="Generate Questions"><br><br><br>
+</form>
+
+<form action="/session_generator/?action=generate_session" method="post">
+    Number of questions per treatment: <input type="number" name="number_of_questions_per_treatment"><br>
+    Number of rounds: <input type="number" name="number_of_rounds"><br>
+    Treatment type: <input type="text" name="treatment_type"><br>
+    Session group: <input type="text" name="group_id"><br>
+    Time limit minutes: <input type="number" name="time_limit_minutes"><br>
+    Question class: <input type="text" name="session_question_class" value="{{ default_question_class }}"><br>
+    Generate control group: <br><input type="radio" name="generate_control" value="yes" checked> Yes<br>
+                            <input type="radio" name="generate_control" value="no"> No<br><br>
+    Control session type: <input type="text" name="control_type"><br>
+    Generate tour session: <br><input type="radio" name="generate_tour" value="yes" checked> Yes<br>
+                            <input type="radio" name="generate_tour" value="no"> No<br><br>
+    <input type="submit" value="Generate Session">
+</form>
+
+</body>
+</html>

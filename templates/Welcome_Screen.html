@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Welcome</title>
+
+    <link rel="stylesheet" type="text/css" href="/css/information_styles.css">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <!-- Bootstrap JS -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-10 col-md-offset-1">
+            {% if redirect_message %}
+                Something is wrong. You were redirected here by accident. Please alert proctor.<br>
+                Error message: {{ redirect_message }}
+            {% endif %}
+            {%  if user %}
+                {{ user }} &nbsp <a href="{{ url }}">{{ url_linktext }}</a><br>
+                {%  if message %}
+                    {{ message }}
+                    <br>
+                {%  endif %}
+                <h2>Welcome, and Some Basics</h2>
+                <ul>
+                <li>Do not use your browser forward, back, or refresh buttons</li>
+                <li>Sometimes it takes a while to interact with the AppEngine browser, so please be patient. If the browser is
+                    busy, do not resubmit or press refresh.</li>
+                </ul>
+
+                <br>Press continue when you are ready.
+                <br>
+                <a class="button" href="{{ continue_link }}">Continue</a>
+            {% else %}
+                Welcome to this experiment. To begin, please log in using your netbadge id.
+                <a href="{{ url }}">{{ url_linktext }}</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

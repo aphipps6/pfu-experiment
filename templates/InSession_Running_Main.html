@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="/css/session.css">
+    <title>Round</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <!-- Bootstrap JS -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+    {% block additional_header %}{% endblock %}
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="/js/session_functions.js"></script>
+
+</head>
+
+<body onbeforeunload="return navigationWarningMessage" {% block body_atr%}{% endblock %}>
+<input type="hidden" id="submitted_question_key">
+
+<div class="container-fluid">
+    <!-- session id: {{ session_key }} &nbsp round id: {{ round_key }} &nbsp session treatment: {{ session_treatment }} &nbsp round treatment id: {{ round_treatment_id }} -->
+    {% include 'Header.html' %}
+    <div class="container">
+        {% if price_info is not none %}
+        <div class="row">
+            <div class="col-md-4 col-md-offset-4">
+                <p>Easy Value: {{ price_info.easy }} &nbsp Hard Value: {{ price_info.hard }}</p>
+            </div>
+        </div>
+        {% endif %}
+        <div class="row">
+            <div class="col-md-4 col-md-offset-4" id="round_main_div">
+                <span id="start_instructions">*Timer will start when you pick your first question</span><br>
+                <button type="button" class="btn btn-default" id="btn_easy" onclick=loadQuestionText("btn_easy","{{ round_key }}","{{ round_minutes }}","{{ step }}")>Easy</button>
+                <button type="button" class="btn btn-default" id="btn_hard" onclick=loadQuestionText("btn_hard","{{ round_key }}","{{ round_minutes }}","{{ step }}")>Hard</button>
+                <button type="button" class="btn btn-default" id="btn_stop" onclick=endRound("{{ round_key }}","{{ step }}")>Stop</button>
+
+                <div id="problem" class="collapse"></div>
+                <br>
+                <div id="div_input_user_answer" style="display: none">
+                    <input id="input_user_answer">
+                </div>
+                <br>
+                <button type="button" class="btn btn-default" id="btn_submit" style="visibility: hidden" onclick=submitQuestionAnswer("{{ round_key }}")>Submit</button>
+                <br>
+            </div>
+        </div>
+    </div>
+    <footer class="footer">
+        <div class="alert alert-info fade in" style="display: none;" id="alert_success">
+            Answer submitted
+        </div>
+    </footer>
+</div>
+
+
+</body>
+</html>
+

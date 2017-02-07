@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="/static/js/countdown.js"></script>
+    <link rel="stylesheet" type="text/css" href="/css/session.css">
+    <style>
+        .bottom-buffer{margin-bottom: 30px;}
+        div.counter {
+            font-family: sans-serif;
+            color: #fff;
+            display: inline-block;
+            font-weight: 100;
+            text-align: center;
+            font-size: 30px;
+        }
+
+        div.counter > div{
+            padding: 10px;
+            border-radius: 3px;
+            background: #00BF96;
+            display: inline-block;
+        }
+
+        div.counter div > span{
+            padding: 15px;
+            border-radius: 3px;
+            background: #00816A;
+            display: inline-block;
+        }
+
+        .smalltext{
+            padding-top: 5px;
+            font-size: 16px;
+        }
+    </style>
+
+</head>
+
+<body>
+    <div class="jumbotron">
+        <h2 class="text-center" id="round_header">Round {{ round_number }} of {{ total_rounds }}</h2>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 col-md-offset-2" id="timer_column_div">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h3 class="text-center">Time Remaining</h3>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-8 col-md-offset-3">
+                            <div id="clockdiv" class="counter">
+                            <div>
+                                <span class="minutes">{{ round_minutes_string }}</span>
+                                <div class="smalltext">Minutes</div>
+                            </div>
+                            <div>
+                                <span class="seconds">00</span>
+                                <div class="smalltext">Seconds</div>
+                            </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4" id="counter_column_div">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h3 class="text-center">Questions Completed</h3>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-8 col-md-offset-3">
+                            <div id="div_round_info" class="counter">
+                            <div>
+                                <span id="easy_completed">0</span>
+                                <div class="smalltext">Easy</div>
+                            </div>
+                            <div>
+                                <span id="hard_completed">0</span>
+                                <div class="smalltext">Hard</div>
+                            </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

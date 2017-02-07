@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>End Round</title>
+    <link rel="stylesheet" type="text/css" href="/css/session.css">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <!-- Bootstrap JS -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+    {% block additional_header %}{% endblock %}
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script src="/js/session_functions.js"></script>
+
+</head>
+<body onbeforeunload="return navigationWarningMessage" {% block body_atr%}{% endblock %}>
+<div class="container-fluid">
+    <h1 class="text-center">Completed Round {{ round_number }} of {{ total_num_rounds }}</h1> <br>
+    <div class="row">
+        <div class="col-md-10 col-md-offset-1">
+            <table class="table table-sm table-hover" id="table_results">
+                <thead>
+                    <tr>
+                        <td></td>
+                        {% for item in list_of_round_results %}
+                            <td>Round {{ item.round_number }}</td>
+                        {% endfor %}
+                        <td class="warning">Total</td>
+                    </tr>
+                </thead>
+                <tbody id="table_body">
+                    <tr id="easy_question_section">
+                        <td>Easy Questions:</td>
+                        {% for item in list_of_round_results %}
+                        <td></td>
+                        {% endfor %}
+                        <td class="warning"></td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp &nbsp &nbsp # Easy Attempted</td>
+                        {%  for item in list_of_round_results %}
+                            <td>{{ item.num_easy }}</td>
+                        {% endfor %}
+                        <td class="warning">{{ total_column.num_easy }}</td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp &nbsp &nbsp # Easy Correct</td>
+                        {%  for item in list_of_round_results %}
+                            <td>{{ item.num_easy_correct }}</td>
+                        {% endfor %}
+                        <td class="warning">{{ total_column.num_easy_correct }}</td>
+                    </tr>
+                    <tr id="easy_payoff_row">
+                        <td>&nbsp &nbsp &nbsp Payoff / Easy</td>
+                        {%  for item in list_of_round_results %}
+                            <td>${{ item.payoff_per_easy }}</td>
+                        {% endfor %}
+                        <td class="warning">${{ total_column.payoff_per_easy }}<br>(Average)</td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp &nbsp &nbsp Payoff from Easy</td>
+                        {%  for item in list_of_round_results %}
+                            <td>${{ item.payoff_easy }}</td>
+                        {% endfor %}
+                        <td class="warning">${{ total_column.payoff_easy }}</td>
+                    </tr>
+                    <tr id="hard_question_section">
+                        <td>Hard Questions:</td>
+                        {% for item in list_of_round_results %}
+                        <td></td>
+                        {% endfor %}
+                        <td class="warning"></td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp &nbsp &nbsp # Hard Attempted</td>
+                        {%  for item in list_of_round_results %}
+                            <td>{{ item.num_hard }}</td>
+                        {% endfor %}
+                        <td class="warning">{{ total_column.num_hard }}</td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp &nbsp &nbsp # Hard Correct</td>
+                        {%  for item in list_of_round_results %}
+                            <td>{{ item.num_hard_correct }}</td>
+                        {% endfor %}
+                        <td class="warning">{{ total_column.num_hard_correct }}</td>
+                    </tr>
+                    <tr id="hard_payoff_row">
+                        <td>&nbsp &nbsp &nbsp Payoff / Hard</td>
+                        {%  for item in list_of_round_results %}
+                            <td>${{ item.payoff_per_hard }}</td>
+                        {% endfor %}
+                        <td class="warning">${{ total_column.payoff_per_hard }}<br>(Average)</td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp &nbsp &nbsp Payoff from Hard</td>
+                        {%  for item in list_of_round_results %}
+                            <td>${{ item.payoff_hard }}</td>
+                        {% endfor %}
+                        <td class="warning">${{ total_column.payoff_hard }}</td>
+                    </tr>
+                    <tr id="time_section">
+                        <td>Time Results:</td>
+                        {% for item in list_of_round_results %}
+                        <td></td>
+                        {% endfor %}
+                        <td class="warning"></td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp &nbsp &nbsp Time Limit (minutes)</td>
+                        {%  for item in list_of_round_results %}
+                            <td>{{ item.time_limit_minutes }}</td>
+                        {% endfor %}
+                        <td class="warning">{{ total_column.time_limit_minutes }}</td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp &nbsp &nbsp Minutes Used</td>
+                        {%  for item in list_of_round_results %}
+                            <td>{{ item.time_used }}</td>
+                        {% endfor %}
+                        <td class="warning">{{ total_column.time_used }}</td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp &nbsp &nbsp Minutes Remaining</td>
+                        {%  for item in list_of_round_results %}
+                            <td>{{ item.time_remaining }}</td>
+                        {% endfor %}
+                        <td class="warning">{{ total_column.time_remaining }}</td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp &nbsp &nbsp Payoff / Minute Remaining</td>
+                        {%  for item in list_of_round_results %}
+                            <td>${{ item.time_value }}</td>
+                        {% endfor %}
+                        <td class="warning">${{ total_column.time_value }}</td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp &nbsp &nbsp Time Payoff</td>
+                        {%  for item in list_of_round_results %}
+                            <td>${{ item.time_payoff }}</td>
+                        {% endfor %}
+                        <td class="warning">${{ total_column.time_payoff }}</td>
+                    </tr>
+                    <tr class="warning">
+                        <td>Total</td>
+                        {% for item in list_of_round_results %}
+                            <td>${{ item.total_payoff }}</td>
+                        {% endfor %}
+                        <td class="warning">${{ total_column.total_payoff }}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <button type="button" class="btn btn-default" id="btn_next_round" onclick=continueToNextRound("{{ continue_link }}")>Continue</button>
+        </div>
+    </div>
+</div>
+</body>
+</html>

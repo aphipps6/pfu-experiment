@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+
+    <link rel="stylesheet" type="text/css" href="/css/information_styles.css">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <!-- Bootstrap JS -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+</head>
+<body>
+<!DOCTYPE html>
+<html lang="en"><!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="/css/session.css">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <!-- Bootstrap JS -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="/js/session_functions.js"></script>
+
+
+</head>
+
+<body>
+<div class="container-fluid">
+    <div class="col-md-6 col-md-offset-3">
+        <h1>Additional Information</h1>
+        <p>Please answer the brief following questions.</p>
+        <form id="survey_form">
+            <div class="form-group">
+                <div class="row">
+                    <div class="col-xs-4">
+                      <label for="graduation">Year of graduation:</label>
+                      <input type="text" class="form-control" id="graduation">
+                    </div>
+                </div>
+                <br>
+                <div class="row">
+                    <div class="col-xs-6">
+                      <label for="country">What country are you from?</label>
+                      <input type="text" class="form-control" id="country">
+                    </div>
+                </div>
+                <br>
+                <div class="row">
+                    <div class="col-xs-6">
+                        <label for="gender"> What is your gender?</label>
+                        <br>
+                        <label class="radio-inline"><input type="radio" name="gender" id="male">Male</label>
+                        <label class="radio-inline"><input type="radio" name="gender" id="female">Female</label>
+                    </div>
+                </div>
+                <br>
+                <div class="row">
+                    <div class="col-xs-4">
+                      <label for="age">What is your age?</label>
+                      <input type="text" class="form-control" id="age">
+                    </div>
+                </div>
+                <br>
+                <div class="row">
+                    <div class="col-xs-6">
+                      <label for="age">What is the title of the job you expect to get upon graduation?</label>
+                      <input type="text" class="form-control" id="job">
+                    </div>
+                </div>
+            </div>
+        </form>
+        <button type="button" class="btn btn-default" id="btn_end_survey" onclick=endSurvey("{{ participant }}","{{ continue_link }}")>Continue</button>
+    </div>
+</div>
+
+</body>
+</html>
