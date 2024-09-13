@@ -106,6 +106,12 @@ class Question(ndb.Model):
     difficulty = ndb.StringProperty()
     question_class = ndb.StringProperty()
 
+class Session(ndb.Model):
+    email = ndb.StringProperty()
+    experiment_key = ndb.KeyProperty()
+    current_step = ndb.IntegerProperty(default=0)
+    last_activity = ndb.DateTimeProperty(auto_now=True)
+    active = ndb.BooleanProperty(default=True)
 
 class ExperimentManagement(ndb.Model):
     """

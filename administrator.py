@@ -5,6 +5,8 @@ import numpy
 from jinja_render import jinja_render
 
 from google.appengine.api import users
+from google.appengine.ext import ndb
+
 from data_classes import *
 from generate_data import *
 from data_constants import *
@@ -420,22 +422,37 @@ class AdminFunctions:
                   "aversion_switch"]
         return [header] + data
 
+    
     def calculate_price_per_question(self, questions_per_minute, n_rounds, minutes_per_round,
                                      expected_session_earnings):
         return expected_session_earnings / (questions_per_minute * n_rounds * minutes_per_round)
 
+    
     def calculate_price_per_minute(self, total_time_value_of_session, n_rounds, minutes_per_round):
         return total_time_value_of_session / (n_rounds * minutes_per_round)
 
-    def get_session_earnings(self, participant, session_index):
+    @staticmethod
+    def get_session_earnings(participant, session_index):
         if participant.treatment_keys is None:
             return 0
         session_treatment_key = ndb.Key(urlsafe=participant.treatment_keys[session_index])
         list_of_round_treatment_keys = MultitaskRoundTreatment.query(ancestor=session_treatment_key).fetch(
             keys_only=True)
+        
+        # find the participantMultitaskSession for this treatment
+        participant_session = ParticipantMultitaskSession.query(
+            ParticipantMultitaskSession.session_treatment_key == session_treatment_key,
+            ancestor=participant.key
+        ).get()
+        
+        if not participant_session:
+            return 0
+        
         list_of_earnings = ParticipantMultitaskRound.query(
             ParticipantMultitaskRound.round_treatment_key.IN(list_of_round_treatment_keys),
-            ancestor=participant.key).fetch(projection=[ParticipantMultitaskRound.earnings])
+            ancestor=participant_session.key
+        ).fetch(projection=[ParticipantMultitaskRound.earnings])
+        
         total_earnings = sum([i.earnings for i in list_of_earnings if i.earnings is not None])
         return total_earnings
 
@@ -456,7 +473,8 @@ class AdminFunctions:
         experiment.lottery_result = random.randint(1, len(list_of_lotteries))
         experiment.put()
 
-    def get_lottery_winnings(self, participant):
+    @staticmethod
+    def get_lottery_winnings(participant):
         experiment = participant.key.parent().get()
         lottery_played = experiment.lottery_played
         lottery_result = experiment.lottery_result
@@ -495,7 +513,8 @@ class AdminFunctions:
                     winnings = p2_b
         return winnings
 
-    def randomize_participants(self, experiment_key):
+    @staticmethod
+    def randomize_participants(experiment_key):
         experiment = ndb.Key(urlsafe=experiment_key).get()
         dict_of_session_treatments = experiment.treatment_session_id_list
         list_of_participants = ParticipantInformation.query(ancestor=ndb.Key(urlsafe=experiment_key)).fetch()
@@ -527,6 +546,7 @@ class AdminFunctions:
                 p.put()
             q += 1
 
+    @staticmethod
     def generate_experiment(self, name):
         # treatment_group = "pilot_102816"
         treatment_group = name

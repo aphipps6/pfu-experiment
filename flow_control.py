@@ -1,6 +1,6 @@
 from jinja_render import jinja_render
 
-from google.appengine.api import users
+
 from data_classes import *
 from generate_data import *
 from data_constants import *
@@ -22,8 +22,15 @@ class UserFlowControl():
     practice_string = "practice_round"
 
     def get_next_url(self, current_step, participant_key, experiment_key, pause=True, return_dict=False):
-        next_step = int(current_step) + 1
-        guide_info = 'participant=' + participant_key + '&experiment=' + experiment_key + '&step=' + str(next_step)
+        session = Session.get_by_id(session_id)
+        if not session:
+            return '/'  # Redirect to start if session not found
+            
+        next_step = session.current_step + 1
+        session.current_step = next_step
+        session.put()
+        
+        guide_info = f'session_id={session_id}&step={next_step}'
         url_order = {
             0: {'name': 'welcome_screen', 'url': '/'},
             1: {'name': 'risk_assessment', 'url': '/risk_assessment/?' + guide_info},
@@ -34,9 +41,10 @@ class UserFlowControl():
             6: {'name': 'survey', 'url': '/survey/?' + guide_info},
             7: {'name': 'summary_screen', 'url': '/summary_screen/?' + guide_info}
         }
+        
         next_url = url_order[next_step]['url']
         if pause:
-            props = {'name': url_order[next_step]['name'], 'url': next_url, 'participant': participant_key, 'experiment': experiment_key}
+            props = {'name': url_order[next_step]['name'], 'url': next_url, 'session_id': session_id}
             return '/pause/?' + urllib.urlencode(props)
         elif return_dict:
             return url_order
@@ -44,6 +52,9 @@ class UserFlowControl():
             return next_url
 
     def get_instructions(self, name, participant_key, proctor=False):
+        session = Session.get_by_id(session_id)
+        if not session:
+            return "Invalid session"
         if name == 'risk_assessment':
             instructions = InstructionConstants.risk_assessment
         elif name == UserFlowControl.tutorial_string:
@@ -185,11 +196,10 @@ class PauseHandler(webapp2.RequestHandler):
     def get(self):
         next_url = self.request.get('url')
         name = self.request.get('name')
-        participant_key = self.request.get('participant')
-        experiment_key = self.request.get('experiment')
-        instructions = UserFlowControl().get_instructions(name, participant_key)
+        session_id = self.request.get('session_id')
+        instructions = UserFlowControl().get_instructions(name, session_id)
         continue_link = next_url
-        check_data = urllib.urlencode({'name': name, 'experiment': experiment_key})
+        check_data = urllib.urlencode({'name': name, 'session_id': session_id})
         condition_check_link = "/check_continue_condition/?" + check_data
         template_values = dict(
             instructions=instructions,
@@ -201,7 +211,12 @@ class PauseHandler(webapp2.RequestHandler):
 class CheckConditionHandler(webapp2.RequestHandler):
     def get(self):
         name = self.request.get('name')
-        experiment = ndb.Key(urlsafe=self.request.get('experiment')).get()
+        session_id = self.request.get('session_id')
+        session = Session.get_by_id(session_id)
+        if not session:
+            self.response.out.write(json.dumps({'keep_going': False}))
+            return
+        experiment = session.experiment_key.get()
         keep_going = True
         if name == 'risk_assessment':
             keep_going = experiment.risk_assessment_enabled

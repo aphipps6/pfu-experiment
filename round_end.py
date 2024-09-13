@@ -1,41 +1,43 @@
+from google.appengine.ext import ndb
+from data_classes import Session, ParticipantInformation, ParticipantMultitaskRound, MultitaskRoundTreatment, SubmittedQuestion
+from data_constants import SessionConstants
+from flow_control import UserFlowControl
 from jinja_render import jinja_render
-
-from google.appengine.api import users
-from data_classes import *
-from generate_data import *
-import json
-import jinja2
-import webapp2
 import datetime
-
-import os, sys
-import jinja2
-import webapp2
-from flow_control import *
-from data_constants import *
+import logging
 
 class EndRoundHandler(webapp2.RequestHandler):
     def get(self):
         round_key = self.request.get('round_key')
+        session_id = self.request.get('session_id')
+        step = self.request.get('step')
+        
+        session = Session.get_by_id(session_id)
+        if not session:
+            self.redirect('/')
+            return
+        
+        
         this_round = ndb.Key(urlsafe=round_key).get()
         if this_round.datetime_end is None:
             this_round.datetime_end = datetime.datetime.now()
         if this_round.datetime_start is None:
             this_round.datetime_start = this_round.datetime_end
         this_round.put()
-        session_key = this_round.key.parent()
+        
+        participant_session_key = this_round.key.parent()
+        participant_session = participant_session_key.get()
 
-        this_session = session_key.get()
-        is_tour = this_session.session_treatment_key.get().treatment_type == SessionConstants.tutorial_string
+        is_tour = participant_session.session_treatment_key.get().treatment_type == SessionConstants.tutorial_string
 
         # set continue link to go to next round if this isn't the last
         if this_round.round_number + 1 == MultitaskRoundTreatment.query(
-                ancestor=session_key.get().session_treatment_key).count():
-            continue_link = "/end_session/?session_key=" + session_key.urlsafe() + "&step=" + self.request.get('step')
+                ancestor=participant_session.session_treatment_key).count():
+            continue_link = f"/end_session/?session_id={session_id}&step={step}"
         else:
-            continue_link = "/round_running/?session_id=" + session_key.urlsafe() + "&step=" + self.request.get('step')
+            continue_link = f"/round_running/?session_id={session_id}&step={step}"
 
-        list_of_round_results = self.get_list_of_round_results(session_key)
+        list_of_round_results = self.get_list_of_round_results(participant_session_key)
         this_round.earnings = list_of_round_results[-1]['total_payoff']
         this_round.put()
         total_column = self.get_total_column(list_of_round_results)
@@ -43,9 +45,9 @@ class EndRoundHandler(webapp2.RequestHandler):
         template_values = {
             'list_of_round_results': list_of_round_results,
             'total_column': total_column,
-            'session_id': session_key.urlsafe(),
+            'session_id': session_id,
             'round_number': this_round.round_number + 1,
-            'total_num_rounds': MultitaskRoundTreatment.query(ancestor=session_key.get().session_treatment_key).count(),
+            'total_num_rounds': MultitaskRoundTreatment.query(ancestor=participant_session.session_treatment_key).count(),
             'continue_link': continue_link
         }
 
@@ -56,7 +58,7 @@ class EndRoundHandler(webapp2.RequestHandler):
 
         self.response.write(jinja_render(template_name, template_values))
 
-    def get_list_of_round_results(self, session_key):
+    def get_list_of_round_results(self, participant_session_key):
         items = []
         for this_round in ParticipantMultitaskRound.query(ancestor=session_key).order(ParticipantMultitaskRound.round_number).fetch():
             round_treatment = this_round.round_treatment_key.get()

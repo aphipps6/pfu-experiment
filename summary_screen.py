@@ -1,31 +1,34 @@
+from google.appengine.ext import ndb
+from data_classes import Session, ParticipantInformation, ExperimentManagement
+from data_constants import SessionConstants
+from admin_constants import AdminConstants
 from jinja_render import jinja_render
-from data_constants import *
-
-from google.appengine.api import users
-from data_classes import *
-from generate_data import *
-from flow_control import *
-import json
-import jinja2
-import webapp2
-import datetime
-
-import os, sys
-import jinja2
-import webapp2
-import urllib
-from administrator import *
-from data_constants import *
+from administrator import AdminFunctions
 import math
 
 class SummaryScreenHandler(webapp2.RequestHandler):
     def get(self):
+        session_id = self.request.get('session_id')
         step = self.request.get('step')
-        experiment = self.request.get('experiment')
-        participant = ndb.Key(urlsafe=self.request.get('participant')).get()
-        participant.active = False
 
+        session = Session.get_by_id(session_id)
+        if not session:
+            self.redirect('/')
+            return
+        
+        participant = ParticipantInformation.query(
+            ParticipantInformation.participant_id == session.email,
+            ancestor=session.experiment_key
+        ).get()
+
+        if not participant:
+            self.response.write("Participant not found")
+            return
+        
+        participant.active = False
         participant.put()
+        
+        experiment = session.experiment_key.get()
 
         if ndb.Key(urlsafe=participant.treatment_keys[0]).get().treatment_type == SessionConstants.constant_coefficient_string:
             s1_name = "Constant Piece-Rate"
@@ -50,6 +53,7 @@ class SummaryScreenHandler(webapp2.RequestHandler):
             adjusted_earnings_message = adjusted_earnings[1]
         rounded_earnings = math.ceil(adjusted_earnings[0])
         list_of_earnings_strings = [[i[0], '%.2f' % i[1]] for i in list_of_earnings]
+        
         template_values = dict(
             list_of_earnings=list_of_earnings_strings,
             total_earnings='%.2f' % total_earnings,

@@ -1,7 +1,6 @@
 from jinja_render import jinja_render
 from data_constants import *
 
-from google.appengine.api import users
 from data_classes import *
 from generate_data import *
 from flow_control import *
@@ -19,78 +18,75 @@ import logging
 
 class InRoundRunningMain(webapp2.RequestHandler):
     def get(self):
-        user = users.get_current_user()
         session_id = self.request.get('session_id', default_value='')
         step = self.request.get('step')
-        # if session_id blank, then this is the first round of session and session needs to be generated
-        # this requires additional data in url: treatment, experiment_key, p_key, and step
+        treatment = self.request.get('treatment', default_value='')
+        
         if session_id == '':
-            treatment = self.request.get('treatment')
-            experiment_key = self.request.get('experiment', default_value='')
-            p_key = self.request.get('participant', default_value='')
-            if p_key == '' or experiment_key == '':
-                message = urllib.urlencode(
-                    {'redirect_message': 'page: /round_running/. Missing participant id or experiment key'})
-                self.redirect("/?" + message)
-
-            # 1 - get ParticipantMultitaskSession (this_session) and MultitaskSessionTreatment (session_treatment)
+            message = urllib.urlencode({'redirect_message': 'page: /round_running/. Missing session id'})
+            self.redirect("/?" + message)
+            return
+        
+        session = Session.get_by_id(session_id)
+        if not session:
+            self.redirect('/')
+            return
+        
+        experiment = session.experiment_key.get()
+        participant = ParticipantInformation.query(
+            ParticipantInformation.participant_id == session.email,
+            ancestor=session.experiment_key
+        ).get()
+        
+        # Check if a ParticipantMultitaskSession already exists for this treatment
+        participant_session = ParticipantMultitaskSession.query(
+            ancestor=participant.key
+        ).filter(
+            ParticipantMultitaskSession.treatment_group == treatment
+        ).get()
+        
+        if not participant_session:
+            # Create a new ParticipantMultitaskSession if it doesn't exist
             if treatment == UserFlowControl.tutorial_string:
-                # this gets the tutorial session treatment for this experiment
-                experiment = ndb.Key(urlsafe=experiment_key).get()
                 session_treatment_key = experiment.tutorial_session_id
-                session_treatment = session_treatment_key.get()
-
-                # now generate the participantMultitaskSession
-                this_session = ParticipantMultitaskSession(parent=ndb.Key(urlsafe=p_key),
-                                                           session_treatment_key=session_treatment_key,
-                                                           datetime_start=datetime.datetime.now(),
-                                                           treatment_group=session_treatment.treatment_group)
-                this_session.put()
-
             elif treatment == UserFlowControl.practice_string:
-                session_treatment = ndb.Key(urlsafe=experiment_key).get().practice_session_id.get()
-                this_session = ParticipantMultitaskSession(parent=ndb.Key(urlsafe=p_key),
-                                                           session_treatment_key=session_treatment.key,
-                                                           datetime_start=datetime.datetime.now(),
-                                                           treatment_group=session_treatment.treatment_group)
-                this_session.put()
-
+                session_treatment_key = experiment.practice_session_id
             else:
-                p_info = ndb.Key(urlsafe=p_key).get()
-                session_treatment = ndb.Key(urlsafe=p_info.treatment_keys[int(treatment)-1]).get()
-                this_session = ParticipantMultitaskSession(parent=ndb.Key(urlsafe=p_key),
-                                                           session_treatment_key=session_treatment.key,
-                                                           datetime_start=datetime.datetime.now(),
-                                                           treatment_group=session_treatment.treatment_group)
-                this_session.put()
-        else:
-            this_session = ndb.Key(urlsafe=session_id).get()
-            session_treatment = this_session.session_treatment_key.get()
-            p_key = this_session.key.parent().urlsafe()
-            experiment_key = this_session.key.parent().parent().urlsafe()
-
-
-
+                session_treatment_key = ndb.Key(urlsafe=participant.treatment_keys[int(treatment)-1]
+                
+            session_treatment = session_treatment_key.get()
+            participant_session = ParticipantMultitaskSession(
+                parent=participant.key,
+                session_treatment_key=session_treatment_key,
+                datetime_start=datetime.datetime.now(),
+                treatment_group=session_treatment.treatment_group
+            )
+            participant_session.put()
+       
 
         # 2 - set up this round and round treatment
         # how many rounds in all? get all treatmentRounds tied to this session treatment
-        total_rounds = MultitaskRoundTreatment.query(ancestor=session_treatment.key).count()
+        total_rounds = MultitaskRoundTreatment.query(ancestor=session_treatment_key).count()
 
         # get round treatment
-        round_number = ParticipantMultitaskRound.query(ancestor=this_session.key).count()
-        round_treatment = MultitaskRoundTreatment.query(MultitaskRoundTreatment.round_number == round_number,
-                                                        ancestor=this_session.session_treatment_key).fetch(1)[0]
+        round_number = ParticipantMultitaskRound.query(ancestor=participant_session.key).count()
+        round_treatment = MultitaskRoundTreatment.query(
+            MultitaskRoundTreatment.round_number == round_number,
+            ancestor=participant_session.session_treatment_key).get()
 
         # create round record
-        this_round = ParticipantMultitaskRound(parent=this_session.key,
-                                               round_treatment_key=round_treatment.key,
-                                               round_number=round_number)
+        this_round = ParticipantMultitaskRound(
+            parent=participant_session.key,
+            round_treatment_key=round_treatment.key,
+            round_number=round_number
+        )
         round_key = this_round.put()
+        
         logging.info("made it here")
+        
         # set up round
         round_minutes = round_treatment.time_limit_minutes
         round_minutes_string = "%02d" % (round_minutes,)
-
 
         on_tour = session_treatment.treatment_type == SessionConstants.tutorial_string
         price_info = None
@@ -107,11 +103,10 @@ class InRoundRunningMain(webapp2.RequestHandler):
             )
 
         template_values = {
-            'user': user,
             'round_minutes': int(round_minutes),
             'round_minutes_string': round_minutes_string,
             'round_key': round_key.urlsafe(),
-            'session_id': this_session.key.urlsafe(),
+            'session_id': session_id,
             'session_treatment': session_treatment.treatment_type,
             'round_number': round_number + 1,
             'total_rounds': total_rounds,
@@ -145,7 +140,15 @@ class QuestionHandler(webapp2.RequestHandler):
         data = json.loads(self.request.body)
         difficulty = data['question_difficulty']
         round_key = data['round_key']
+        session_id = data['session_id']
+        
+        session = Session.get_by_id(session_id)
+        if not session:
+            self.response.out.write(json.dumps({'error': 'Invalid session'}))
+            return
+            
         this_round = ndb.Key(urlsafe=round_key).get()
+        
         if data['first_question'] == 1:
             this_round.datetime_start = datetime.datetime.now()
             this_round.put()
@@ -157,13 +160,17 @@ class QuestionHandler(webapp2.RequestHandler):
         if question is None:
             self.response.out.write(json.dumps(({'end_round': True})))
         else:
-            submitted_question = SubmittedQuestion(parent=ndb.Key(urlsafe=round_key),
-                                                   question_key=question.key,
-                                                   datetime_start=datetime.datetime.now()
-                                                   )
+            submitted_question = SubmittedQuestion(
+                parent=ndb.Key(urlsafe=round_key),
+                question_key=question.key,
+                datetime_start=datetime.datetime.now()
+            )
             submitted_question_key = submitted_question.put()
-            self.response.out.write(json.dumps(({'end_round': False, 'question_text': question.text,
-                                                 'submitted_question_key': submitted_question_key.urlsafe()})))
+            self.response.out.write(json.dumps({
+                'end_round': False,
+                'question_text': question.text,
+                'submitted_question_key': submitted_question_key.urlsafe()
+            }))
 
     def get_question_number(self, this_round, difficulty):
 

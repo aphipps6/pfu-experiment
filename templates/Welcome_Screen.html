@@ -16,36 +16,43 @@
 
 </head>
 <body>
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-md-10 col-md-offset-1">
-            {% if redirect_message %}
-                Something is wrong. You were redirected here by accident. Please alert proctor.<br>
-                Error message: {{ redirect_message }}
-            {% endif %}
-            {%  if user %}
-                {{ user }} &nbsp <a href="{{ url }}">{{ url_linktext }}</a><br>
-                {%  if message %}
-                    {{ message }}
-                    <br>
-                {%  endif %}
-                <h2>Welcome, and Some Basics</h2>
-                <ul>
-                <li>Do not use your browser forward, back, or refresh buttons</li>
-                <li>Sometimes it takes a while to interact with the AppEngine browser, so please be patient. If the browser is
-                    busy, do not resubmit or press refresh.</li>
-                </ul>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-10 col-md-offset-1">
+                {% if redirect_message %}
+                    <div class="alert alert-danger">
+                        Something is wrong. You were redirected here by accident. Please alert proctor.<br>
+                        Error message: {{ redirect_message }}
+                    </div>
+                {% endif %}
 
-                <br>Press continue when you are ready.
-                <br>
-                <a class="button" href="{{ continue_link }}">Continue</a>
-            {% else %}
-                Welcome to this experiment. To begin, please log in using your netbadge id.
-                <a href="{{ url }}">{{ url_linktext }}</a>
-            {% endif %}
+                {% if email %}
+                    <h2>Welcome, {{ email }}</h2>
+                    {% if message %}
+                        <p class="alert alert-info">{{ message }}</p>
+                    {% endif %}
+
+                    <h3>Basic Instructions</h3>
+                    <ul>
+                        <li>Do not use your browser forward, back, or refresh buttons</li>
+                        <li>Sometimes it takes a while to interact with the AppEngine browser, so please be patient. If the browser is busy, do not resubmit or press refresh.</li>
+                    </ul>
+
+                    <p>Press continue when you are ready.</p>
+                    <a href="{{ continue_link }}" class="btn btn-primary">Continue</a>
+                {% else %}
+                    <h2>Welcome to the Experiment</h2>
+                    <p>To begin, please enter your email address:</p>
+                    <form method="get" class="form-inline">
+                        <input type="hidden" name="experiment_name" value="{{ experiment_name }}">
+                        <div class="form-group">
+                            <input type="email" name="email" required class="form-control" placeholder="Enter your email">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Start</button>
+                    </form>
+                {% endif %}
+            </div>
         </div>
     </div>
-</div>
-
 </body>
 </html>
