@@ -1,72 +1,97 @@
+import hashlib
 from jinja_render import jinja_render
-
-from data_classes import *
-from generate_data import *
-from flow_control import *
-import webapp2
-import datetime
-import os, sys
-import jinja2
-import webapp2
-import urllib
+from flask import render_template, request, make_response, redirect, url_for, Blueprint
+from flask import session as flask_session
+from data_classes import ExperimentManagement, ParticipantInformation, Session, client
+from google.cloud import ndb
+from flow_control import UserFlowControl
 import uuid
+from contextlib import contextmanager
+import logging
 
 
-class WelcomeScreenHandler(webapp2.RequestHandler):
-    def get(self):
-        experiment_name = self.request.get('experiment_name', default_value='')
-        redirect_message = self.request.get('redirect_message', default_value='')
-        email = self.request.get('email', default_value='')
+session_welcome_bp = Blueprint('session_welcome_bp', __name__)
 
-        if experiment_name == '':
-            self.response.write(jinja_render('SelectExperiment.html', {'redirect_message': redirect_message}))
-            return
 
-        if ExperimentManagement.query(ExperimentManagement.experiment_name == experiment_name).count() == 0:
-            self.response.write(jinja_render('SelectExperiment.html', {'message': '*Invalid experiment entered'}))
-            return
+@session_welcome_bp.route('/session_welcome/')
+def session_welcome():
+    experiment_name = request.args.get('experiment_name', '')
+    redirect_message = request.args.get('redirect_message', '')
+    email = request.args.get('email', '')
 
-        experiment_key = ExperimentManagement.query(
-            ExperimentManagement.experiment_name == experiment_name).get(keys_only=True).urlsafe()
+    if experiment_name == '':
+        return jinja_render('SelectExperiment.html', {'redirect_message': redirect_message})
 
-        if email:
-            query = ParticipantInformation.query(ParticipantInformation.participant_id == email,
-                                                 ParticipantInformation.active == True,
-                                                 ancestor=ndb.Key(urlsafe=experiment_key))
-            if query.count() > 0:
-                p_key = query.fetch(1, keys_only=True)[0]
-            else:
-                p_key = self.generate_participant_record(email=email, experiment_key=experiment_key)
+    
+    experiment = ExperimentManagement.query(ExperimentManagement.experiment_name == experiment_name).get()
+    if not experiment:
+        return jinja_render('SelectExperiment.html', {'message': '*Invalid experiment entered'})
 
-            session_id = self.create_session(email, experiment_key)
-            self.response.set_cookie('session_id', session_id, httponly=True, secure=True)
+    experiment_key = experiment.key
 
-            continue_link = UserFlowControl().get_next_url(session_id=session_id)
-        else:
-            continue_link = '/'
-
-        template_values = {
-            'email': email,
-            'experiment_name': experiment_name,
-            'step': 0,
-            'continue_link': continue_link,
-            'redirect_message': redirect_message
-        }
-        self.response.write(jinja_render('Welcome_Screen.html', template_values))
-
-    def generate_participant_record(self, email, experiment_key):
-        p_key = ParticipantInformation(parent=ndb.Key(urlsafe=experiment_key),
-                                       participant_id=email,
-                                       active=True).put()
-        return p_key
-
-    def create_session(self, email, experiment_key):
-        session_id = str(uuid.uuid4())
-        session = Session(
-            id=session_id,
-            email=email,
-            experiment_key=ndb.Key(urlsafe=experiment_key),
-            active=True
+    if email:
+        
+        query = ParticipantInformation.query(
+            ParticipantInformation.participant_id == email,
+            ParticipantInformation.active == True,
+            ancestor=experiment_key
         )
-        session.put()
-        return session_id
+        participant = query.get()
+        if not participant:
+            participant = generate_participant_record(email=email, experiment_key=experiment_key)
+        
+        session_id = create_session(email, experiment_key=experiment_key,experiment_name = experiment_name)
+        logging.info(f"Created session with id: {session_id}")
+        continue_link = UserFlowControl().get_next_url(session_id=session_id)
+    else:
+        continue_link = '/'
+
+    template_values = {
+        'email': email,
+        'experiment_name': experiment_name,
+        'step': 0,
+        'continue_link': continue_link,
+        'redirect_message': redirect_message
+    }
+
+    response = make_response(render_template('Welcome_Screen.html', **template_values))
+    #if email:
+        #response.set_cookie('session_id', session_id, httponly=True, secure=True)
+    return response
+
+def generate_participant_record(email, experiment_key):
+    logging.info(f"Generating participant record for email: {email}")
+    
+    participant = ParticipantInformation(
+        parent=experiment_key,
+        participant_id=email,active=True
+        )
+    key = participant.put()
+    logging.info(f"Generated participant record: {participant}")
+    return key
+
+def create_session(email, experiment_key,experiment_name):
+    flask_session.clear()
+    combined = f"{email}:{experiment_name}"
+    session_id = hashlib.sha256(combined.encode()).hexdigest()
+    if not isinstance(experiment_key, ndb.Key):
+        try:
+            experiment_key = ndb.Key(urlsafe=experiment_key)
+        except:
+            print(f"Error: Invalid experiment key: {experiment_key}")
+            return None 
+    
+    session = Session(
+        id=session_id,
+        email=email,
+        experiment_key=experiment_key,
+        active=True,
+        current_step=0
+    )
+    key = session.put()
+    created_session = key.get()
+    if created_session is None:
+        print(f"Error: Session creation failed for id: {session_id}")
+        return None
+    logging.info(f"Created session: {session}")
+    return session_id

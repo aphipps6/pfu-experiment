@@ -17,13 +17,19 @@ function resetExperiment() {
     window.location.href = '/admin/reset_experiment/?experiment_name='.concat(name);
 }
 
-function loadQuestionText(button_id, round_key, round_minutes, step) {
-    var first = startClockIfFirstQuestion(round_minutes);
-    var n_easy = parseInt($('#easy_completed').text());
-    var n_hard = parseInt($('#hard_completed').text());
+function loadQuestionText(buttonId, roundKey, roundMinutes, step, session_id) {
+    //alert('Function called');
+    console.log('buttonId:', buttonId);
+    console.log('roundKey:', roundKey);
+    console.log('roundMinutes:', roundMinutes);
+    console.log('step:', step);
+    var first = startClockIfFirstQuestion(roundMinutes);
+    var n_easy = parseInt($('#easy_completed').text(), 10);
+    var n_hard = parseInt($('#hard_completed').text(), 10);
     var difficulty;
     var question_number;
-    if (button_id == "btn_easy") {
+    
+    if (buttonId === "btn_easy") {
         difficulty = "easy";
         question_number = n_easy;
     } else {
@@ -35,15 +41,26 @@ function loadQuestionText(button_id, round_key, round_minutes, step) {
         type: "POST",
         url: "/load_question/",
         dataType: 'json',
-        data: JSON.stringify({"question_difficulty": difficulty, "round_key": round_key, "first_question": first, "question_number": question_number}),
+        contentType: 'application/json',
+        data: JSON.stringify({
+            "question_difficulty": difficulty, 
+            "round_key": roundKey, 
+            "first_question": first ? 1 : 0,
+            "question_number": question_number,
+            "session_id": session_id
+        }),
         success: function (response) {
             if (response['end_round']){
-                endRound(round_key, step)
+                endRound(roundKey, step);
             } else {
                 $("#problem").html(response['question_text']);
                 $("#problem").collapse('show');
                 $("#submitted_question_key").val(response['submitted_question_key']);
             }
+        },
+        error: function(xhr, status, error) {
+            console.error("Error loading question:", error);
+            alert("There was an error loading the question. Please try again.");
         }
     });
     //disableOtherButton(button_id);
@@ -73,6 +90,7 @@ function submitQuestionAnswer(round_key) {
         type: "POST",
         url: "/submit_question/",
         dataType: 'json',
+        contentType: 'application/json',  // Add this line
         data: JSON.stringify({"submitted_answer": answer, "submitted_question_key": submitted_question_key,
             "round_key": round_key}),
         success: function (response) {
@@ -140,11 +158,17 @@ function navigationWarningMessage(){
     return "";
 }
 
-function endRound(round_key,step){
-    window.onbeforeunload = null;
-    window.location.href = '/end_round/?round_key='.concat(round_key).concat("&step=").concat(step);
+function navigationWarningMessageInRound(){
+    const message = "Warning: Refreshing or leaving this page will end this round";
+    return message;
 }
 
+function endRound(treatment,round_key,step,session_id){
+    window.onbeforeunload = null;
+    window.location.href = `/end_round/?treatment=${treatment}&round_key=${round_key}&session_id=${session_id}&step=${step}`;
+}
+
+// this is the old version
 function endRiskAssessment(menu_name,continue_link,participant) {
     var form = document.forms["risk_form"];
     var radioResults = [];
@@ -167,26 +191,7 @@ function endRiskAssessment(menu_name,continue_link,participant) {
     });
 }
 
-function endSurvey(participant,continue_link) {
-    var formResults = {
-        'graduation_year': document.getElementById("graduation").value,
-        'country': document.getElementById("country").value,
-        'male': document.getElementById("male").checked,
-        'female': document.getElementById("female").checked,
-        'age': document.getElementById("age").value
-    };
 
-    var this_data = JSON.stringify({'results': formResults,'participant': participant});
-    $.ajax({
-        type: "POST",
-        url: "/survey_end/",
-        dataType: 'json',
-        data: this_data,
-        success: function(result){
-            window.location.href = continue_link;
-        }
-    });
-}
 
 
 function startRoundTour() {
@@ -374,6 +379,36 @@ function waitForCondition(this_link){
     check_link = this_link;
     checkPauseCondition();
 }
+function checkPauseCondition() {
+    // Parse the current URL to get the query parameters
+    var urlParams = new URLSearchParams(window.location.search);
+    var name = urlParams.get('name');
+    var sessionId = urlParams.get('session_id');
+
+    // Construct the URL properly
+    var checkUrl = '/check_continue_condition/?' + $.param({
+        name: name,
+        session_id: sessionId
+    });
+
+    $.ajax({
+        type: "GET",
+        url: checkUrl,
+        dataType: 'json',
+        success: function(result) {
+            if (result.keep_going == false) {
+                setTimeout(checkPauseCondition, 2500);
+            } else {
+                $('#continue_button').removeClass('disabled');
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error("Error checking pause condition:", status, error);
+            setTimeout(checkPauseCondition, 2500);
+        }
+    });
+}
+/*
 function checkPauseCondition(){
     $.ajax({
         type: "GET",
@@ -382,10 +417,10 @@ function checkPauseCondition(){
         data: JSON.stringify({}),
         success: function(result){
             if (result.keep_going == false) {
-                /*var h = document.createElement("P");
-                var t = document.createTextNode("waiting");
-                h.appendChild(t);
-                document.body.appendChild(h);*/
+                #var h = document.createElement("P");
+                #var t = document.createTextNode("waiting");
+                #h.appendChild(t);
+                #document.body.appendChild(h);
                 setTimeout('checkPauseCondition()', 2500);
             } else {
                 $('#continue_button').removeClass('disabled');
@@ -393,3 +428,4 @@ function checkPauseCondition(){
         }
     });
 }
+*/

@@ -3,68 +3,85 @@ import datetime
 from data_classes import *
 import logging
 from data_constants import *
+from typing import Callable, List, Optional
 
-
-def generate_session_treatment(treatment_type,
-                               treatment_group,
-                               number_of_questions,
-                               question_class,
-                               hard_payoff_generating_function,
-                               easy_payoff_generating_function,
-                               number_of_rounds,
-                               time_limit_minutes,
-                               time_value,
-                               payoff_known,
-                               question_key_exclusion_list,
-                               hard_high=None,
-                               hard_payoff_distribution=None,
-                               easy_payoff_distribution=None,
-                               ):
+def generate_session_treatment(
+    treatment_type: str,
+    treatment_group: str,
+    number_of_questions: int,
+    question_class: type,
+    hard_payoff_generating_function: Callable[[], float],
+    easy_payoff_generating_function: Callable[[], float],
+    number_of_rounds: int,
+    time_limit_minutes: int,
+    time_value: float,
+    payoff_known: bool,
+    question_key_exclusion_list: List[str],
+    hard_high: Optional[float] = None,
+    hard_payoff_distribution: Optional[Callable[[], float]] = None,
+    easy_payoff_distribution: Optional[Callable[[], float]] = None,
+) -> MultitaskSessionTreatment:
     """Generate a session treatment - this will create questions and treatment templates and tie them to a new
         Session Treatment object"""
 
-    session_key = MultitaskSessionTreatment(treatment_type=treatment_type,
-                                            treatment_group=treatment_group,
-                                            hard_payoff_distribution=hard_payoff_distribution,
-                                            easy_payoff_distribution=easy_payoff_distribution,
-                                            hard_high_variance=hard_high,
-                                            ).put()
+    session_key = MultitaskSessionTreatment(
+        treatment_type=treatment_type,
+        treatment_group=treatment_group,
+        hard_payoff_distribution=hard_payoff_distribution,
+        easy_payoff_distribution=easy_payoff_distribution,
+        hard_high_variance=hard_high,
+    ).put()
 
     # Because every round treatment has only one parent, creating a new session requires creating new rounds
-    rounds = generate_new_rounds(number_of_rounds=number_of_rounds,
-                                 number_of_questions=number_of_questions,
-                                 time_limit_minutes=time_limit_minutes,
-                                 time_value=time_value,
-                                 question_class=question_class,
-                                 hard_payoff_generating_function=hard_payoff_generating_function,
-                                 easy_payoff_generating_function=easy_payoff_generating_function,
-                                 payoff_known=payoff_known,
-                                 session_key=session_key,
-                                 question_key_exclusion_list=question_key_exclusion_list)
+    rounds = generate_new_rounds(
+        number_of_rounds=number_of_rounds,
+        number_of_questions=number_of_questions,
+        time_limit_minutes=time_limit_minutes,
+        time_value=time_value,
+        question_class=question_class,
+        hard_payoff_generating_function=hard_payoff_generating_function,
+        easy_payoff_generating_function=easy_payoff_generating_function,
+        payoff_known=payoff_known,
+        session_key=session_key,
+        question_key_exclusion_list=question_key_exclusion_list
+    )
     return session_key
 
 
-def generate_new_rounds(number_of_rounds, number_of_questions, time_limit_minutes, time_value, question_class,
-                        hard_payoff_generating_function, easy_payoff_generating_function, payoff_known, session_key,
-                        question_key_exclusion_list):
-    easy_questions, hard_questions = get_questions(number_of_questions=number_of_questions * number_of_rounds,
-                                                   question_class=question_class,
-                                                   question_key_exclusion_list=question_key_exclusion_list)
+def generate_new_rounds(
+    number_of_rounds: int,
+    number_of_questions: int,
+    time_limit_minutes: int,
+    time_value: float,
+    question_class: type,
+    hard_payoff_generating_function: Callable[[], float],
+    easy_payoff_generating_function: Callable[[], float],
+    payoff_known: bool,
+    session_key: MultitaskSessionTreatment,
+    question_key_exclusion_list: List[str]
+) -> List[MultitaskRoundTreatment]:
+    easy_questions, hard_questions = get_questions(
+        number_of_questions=number_of_questions * number_of_rounds,
+        question_class=question_class,
+        question_key_exclusion_list=question_key_exclusion_list
+    )
     round_list = []
-    logging.info("IN: generate_data lin 45")
+    logging.info("IN: generate_data line 45")
     logging.info(time_value)
     for n in range(number_of_rounds):
         this_easy_questions = easy_questions[n * number_of_questions:(n + 1) * number_of_questions]
         this_hard_questions = hard_questions[n * number_of_questions:(n + 1) * number_of_questions]
-        round_list.append(MultitaskRoundTreatment(parent=session_key,
-                                                  hard_payoff=hard_payoff_generating_function(),
-                                                  easy_payoff=easy_payoff_generating_function(),
-                                                  round_number=n,
-                                                  payoff_known=payoff_known,
-                                                  question_keys_hard=this_hard_questions,
-                                                  question_keys_easy=this_easy_questions,
-                                                  time_limit_minutes=time_limit_minutes,
-                                                  time_value=time_value).put())
+        round_list.append(MultitaskRoundTreatment(
+            parent=session_key,
+            hard_payoff=hard_payoff_generating_function(),
+            easy_payoff=easy_payoff_generating_function(),
+            round_number=n,
+            payoff_known=payoff_known,
+            question_keys_hard=this_hard_questions,
+            question_keys_easy=this_easy_questions,
+            time_limit_minutes=time_limit_minutes,
+            time_value=time_value
+        ).put())
     return round_list
 
 

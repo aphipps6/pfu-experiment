@@ -1,0 +1,7 @@
+Flask
+Werkzeug
+google-cloud-ndb
+google-cloud-datastore
+Jinja2
+gunicorn
+numpy

@@ -1,89 +1,113 @@
+import traceback
+from flask import Flask, request, jsonify, redirect, session, url_for
+from google.cloud import ndb
 from jinja_render import jinja_render
 
 
 from data_classes import *
-from generate_data import *
+#from generate_data import *
 from data_constants import *
 from admin_constants import AdminConstants
 
 import json
-import jinja2
-import webapp2
-import datetime
-
-import os, sys
-import jinja2
-import webapp2
-import urllib
+import urllib.parse
 import logging
 
-class UserFlowControl():
+from flask import Blueprint
+flow_control = Blueprint('flow_control', __name__)
+
+
+class UserFlowControl:
     tutorial_string = "tutorial"
     practice_string = "practice_round"
-
-    def get_next_url(self, current_step, participant_key, experiment_key, pause=True, return_dict=False):
-        session = Session.get_by_id(session_id)
-        if not session:
-            return '/'  # Redirect to start if session not found
-            
-        next_step = session.current_step + 1
-        session.current_step = next_step
-        session.put()
+    
+    def get_next_url(self, session_id, pause=True, return_dict=False, proctor=False):
+        if not proctor:
+            logging.info(f"Getting next URL for session_id: {session_id}")
         
-        guide_info = f'session_id={session_id}&step={next_step}'
+            session = Session.get_by_id(session_id)
+            if not session:
+                logging.error(f"Session not found for id: {session_id}")
+                return '/'  # Redirect to start if session not found
+                
+            next_step = session.current_step + 1
+            session.current_step = next_step
+            session.put()
+           # guide_info = f'session_id={session_id}&step={next_step}'
+        
+        else:
+           # guide_info = f'session_id=&step=0'
+            next_step = 0
+
         url_order = {
             0: {'name': 'welcome_screen', 'url': '/'},
-            1: {'name': 'risk_assessment', 'url': '/risk_assessment/?' + guide_info},
-            2: {'name': self.tutorial_string,'url': '/round_running/?treatment=' + self.tutorial_string + '&' + guide_info},
-            3: {'name': self.practice_string,'url': '/round_running/?treatment=' + self.practice_string + '&' + guide_info},
-            4: {'name': 'treatment_1', 'url': '/round_running/?treatment=1&' + guide_info},
-            5: {'name': 'treatment_2', 'url': '/round_running/?treatment=2&' + guide_info},
-            6: {'name': 'survey', 'url': '/survey/?' + guide_info},
-            7: {'name': 'summary_screen', 'url': '/summary_screen/?' + guide_info}
+            1: {'name': 'risk_assessment', 'url': url_for('risk_assessment_handler',session_id=session_id)},  
+            2: {'name': UserFlowControl.tutorial_string, 'url': url_for('in_round_running_main',session_id=session_id, treatment=SessionConstants.tutorial_string)}, 
+            3: {'name': UserFlowControl.practice_string, 'url': url_for('in_round_running_main', session_id=session_id,treatment=SessionConstants.practice_string)},  
+            4: {'name': 'treatment_1', 'url': url_for('in_round_running_main',session_id=session_id,treatment=1)},  
+            5: {'name': 'treatment_2', 'url': url_for('in_round_running_main',session_id=session_id,treatment=2)},  
+            6: {'name': 'survey', 'url': url_for('survey_handler',session_id=session_id,treatment=SessionConstants.survey_string)},  
+            7: {'name': 'summary_screen', 'url': url_for('summary_screen_handler',session_id=session_id)},  
         }
         
+        if next_step >= len(url_order):
+            logging.info("No more steps. Redirecting to END")
+            next_step = len(url_order) - 1
+
         next_url = url_order[next_step]['url']
         if pause:
             props = {'name': url_order[next_step]['name'], 'url': next_url, 'session_id': session_id}
-            return '/pause/?' + urllib.urlencode(props)
+            return url_for('pause_handler') + '?' + urllib.parse.urlencode(props)  
         elif return_dict:
             return url_order
         else:
             return next_url
 
-    def get_instructions(self, name, participant_key, proctor=False):
-        session = Session.get_by_id(session_id)
-        if not session:
-            return "Invalid session"
-        if name == 'risk_assessment':
-            instructions = InstructionConstants.risk_assessment
-        elif name == UserFlowControl.tutorial_string:
-            instructions = InstructionConstants.tutorial
-        elif name == UserFlowControl.practice_string:
-            instructions = InstructionConstants.fixed_wage
-        elif name == "treatment_1" or name == "treatment_2":
-            if proctor:
-                instructions = InstructionConstants.proctor_session_instructions
-            else:
-                if name == "treatment_1":
-                    n = 0
-                else:
-                    n = 1
-                participant = ndb.Key(urlsafe=participant_key).get()
-                if participant.treatment_keys is None:
-                    logging.info("treatment keys is none. probably need to assign treatments")
-                this_treatment_key_urlsafe = participant.treatment_keys[n]
-                treatment_type = ndb.Key(urlsafe=this_treatment_key_urlsafe).get().treatment_type
-                instructions = self.get_instructions_for_treatment(treatment_type)
-        elif name == "survey":
-            instructions = InstructionConstants.survey
-        elif name == "summary_screen":
-            instructions = InstructionConstants.summary_screen
-        else:
-            instructions = "No instructions found"
-        return instructions
+    def get_instructions(self, name, session_id, proctor=False):
+        logging.info(f"Getting instructions for name: {name}, session_id: {session_id}")
+        try:
+            session = Session.get_by_id(session_id)
+            if not session:
+                logging.error(f"Session not found for id: {session_id}")
+                return "Invalid session"
 
-    def get_instructions_for_treatment(self, treatment_type):
+            logging.info(f"Session retrieved successfully: {session}")
+
+            if name == 'risk_assessment':
+                instructions = InstructionConstants.risk_assessment
+            elif name == UserFlowControl.tutorial_string:
+                instructions = InstructionConstants.tutorial
+            elif name == UserFlowControl.practice_string:
+                instructions = InstructionConstants.fixed_wage
+            elif name == "treatment_1" or name == "treatment_2":
+                if proctor:
+                    instructions = InstructionConstants.proctor_session_instructions
+                else:
+                    if name == "treatment_1":
+                        n = 0
+                    else:
+                        n = 1
+                    participant = ParticipantInformation.query(
+                        ParticipantInformation.participant_id == session.email,
+                        ancestor=session.experiment_key
+                    ).get()
+                    if participant.treatment_keys is None:
+                        logging.info("treatment keys is none. probably need to assign treatments")
+                    this_treatment_key_urlsafe = participant.treatment_keys[n]
+                    treatment_type = ndb.Key(urlsafe=this_treatment_key_urlsafe).get().treatment_type
+                    instructions = UserFlowControl.get_instructions_for_treatment(treatment_type)
+            elif name == "survey":
+                instructions = InstructionConstants.survey
+            elif name == "summary_screen":
+                instructions = InstructionConstants.summary_screen
+            else:
+                instructions = "No instructions found"
+            return instructions
+        except Exception as e:
+            logging.error(f"Error in get_instructions: {str(e)}. Perhaps proctor needs to assign treatments?")
+            return "Error in get_intructions: {str(e)}"
+
+    def get_instructions_for_treatment(treatment_type):
         if treatment_type == SessionConstants.constant_coefficient_string:
             return InstructionConstants.constant_coefficient
         else:
@@ -129,7 +153,7 @@ class InstructionConstants:
 
     fixed_wage = """
       <h2>Fixed Payment Session</h2>
-      <p> In this session, you will be paid a flat rate of $""" + '%.2f' % AdminConstants.practice_fee + """
+      <p> In this session, you will be paid a flat rate of $""" + '%.2f' % AdminConstants.PRACTICE_FEE + """
       <span class="bg-danger">regardless of how many questions you answer correctly</span>. We encourage you to do
       your best, since this will be helpful to us. While it is helpful for us that you do a mix of easy and hard problems,
        hard problems usually provide more information (at least in this part). Just remember, there are more rounds coming!</p>
@@ -138,7 +162,7 @@ class InstructionConstants:
       <ul>
         <li><span class="bg-danger">In this session, there is no payoff from time remaining on the clock.</span></li>
         <li>The round results will be the same as in the tutorial, but it will show 0 in the payoffs. Just remember,
-        for this part, <span color="bg-danger">you will be paid $"""+ '%.2f' % AdminConstants.practice_fee + """ no
+        for this part, <span color="bg-danger">you will be paid $"""+ '%.2f' % AdminConstants.PRACTICE_FEE + """ no
         matter how well you do </span>.
       </ul>
       <h4>Simple Hints</h4>
@@ -151,12 +175,12 @@ class InstructionConstants:
 
     constant_coefficient = """
       <h2>Constant Piece-Rate</h2>
-      <p> In this session, you will be paid  $""" + '%.2f' % AdminConstants.constant_coefficients_easy + """
-      for each easy question you answer correctly, and $""" + '%.2f' % AdminConstants.constant_coefficients_hard + """
+      <p> In this session, you will be paid  $""" + '%.2f' % AdminConstants.CONSTANT_COEFFICIENTS_EASY + """
+      for each easy question you answer correctly, and $""" + '%.2f' % AdminConstants.CONSTANT_COEFFICIENTS_HARD + """
       for each hard question you answer correctly.</p>
       <h4>Rules Unique to This Session:</h4>
       <ul>
-        <li>You will receive $""" + '%.2f' % AdminConstants.time_value + """
+        <li>You will receive $""" + '%.2f' % AdminConstants.TIME_VALUE + """
             for each minute remaining on the clock when you end the round.</li>
       </ul>
       <h4>Simple Hints</h4>
@@ -177,7 +201,7 @@ class InstructionConstants:
             an easy question.</span></li>
         <li><span class="bg-danger">It is not guaranteed that a hard question will always be worth more than an easy
             question!</span></li>
-        <li>You will receive $""" + '%.2f' % AdminConstants.time_value + """
+        <li>You will receive $""" + '%.2f' % AdminConstants.TIME_VALUE + """
             for each minute remaining on the clock when you end the round.</li>
       </ul>
       <h4>Simple Hints</h4>
@@ -192,32 +216,82 @@ class InstructionConstants:
     summary_screen = """<h2>Summary</h2><p>That ends the experiment! In the next screen, you will be shown your total earnings.
       Please be sure to enter the rounded earnings in your receipt form.</p>"""
 
-class PauseHandler(webapp2.RequestHandler):
-    def get(self):
-        next_url = self.request.get('url')
-        name = self.request.get('name')
-        session_id = self.request.get('session_id')
-        instructions = UserFlowControl().get_instructions(name, session_id)
-        continue_link = next_url
-        check_data = urllib.urlencode({'name': name, 'session_id': session_id})
-        condition_check_link = "/check_continue_condition/?" + check_data
-        template_values = dict(
-            instructions=instructions,
-            continue_link=continue_link,
-            condition_check_link=condition_check_link
-        )
-        self.response.write(jinja_render("Pause.html", template_values))
+@flow_control.route('/pause/')
+def pause_function():
+    next_url = request.args.get('url')
+    logging.info(f"Pause function called with next_url: {next_url}")
 
-class CheckConditionHandler(webapp2.RequestHandler):
-    def get(self):
-        name = self.request.get('name')
-        session_id = self.request.get('session_id')
+    name = request.args.get('name')
+    session_id = request.args.get('session_id')
+    
+    logging.info(f"Pause handler called with session_id: {session_id}")
+
+    try:
         session = Session.get_by_id(session_id)
         if not session:
-            self.response.out.write(json.dumps({'keep_going': False}))
-            return
+            logging.error(f"Session not found for id: {session_id}")
+            return redirect(url_for('welcome_screen'))
+        
+        logging.info(f"Session retrieved successfully: {session}")
         experiment = session.experiment_key.get()
-        keep_going = True
+        
+        user_flow_control = UserFlowControl()
+        instructions = user_flow_control.get_instructions(name, session_id)
+        
+        continue_link = next_url
+        check_data = {'name': name, 'session_id': session_id}
+        condition_check_link = url_for('flow_control.check_condition', **check_data)
+        
+        template_values = {
+            'instructions': instructions,
+            'continue_link': continue_link,
+            'condition_check_link': condition_check_link,
+            'session_id': session_id
+        }
+        
+        return jinja_render("Pause.html", template_values)
+    except Exception as e:
+        logging.error(f"Error in pause_handler: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@flow_control.route('/check_continue_condition/')
+def check_condition():
+    name = request.args.get('name')
+    session_id = request.args.get('session_id')
+    
+    logging.info(f"Checking condition for name: {name}, session_id: {session_id}")
+    
+    if not session_id:
+        logging.warning("Session ID not provided")
+        return jsonify({'keep_going': False, 'error': 'Session ID not provided'}), 400
+    
+    try:
+        session_key = ndb.Key('Session', session_id)
+        logging.info(f"Attempting to retrieve session with key: {session_key}")
+        session = session_key.get()
+
+        if not session:
+            logging.warning(f"Session not found for id: {session_id}")
+            return jsonify({'keep_going': False, 'error': 'Session not found'})
+        
+        logging.info(f"Session retrieved: {session}")
+
+        if not session.experiment_key:
+            logging.warning(f"Experiment key not found for session: {session_id}")
+            return jsonify({'keep_going': False, 'error': 'Experiment key not found'}), 404
+        
+        logging.info(f"Attempting to retrieve experiment with key: {session.experiment_key}")
+
+        experiment = session.experiment_key.get()
+        if not experiment:
+            logging.warning(f"Experiment not found for session: {session_id}")
+            return jsonify({'keep_going': False, 'error': 'Experiment not found'})
+        
+        logging.info(f"Experiment retrieved: {experiment}")
+
+        keep_going = False
+        
         if name == 'risk_assessment':
             keep_going = experiment.risk_assessment_enabled
         elif name == UserFlowControl.tutorial_string:
@@ -230,4 +304,14 @@ class CheckConditionHandler(webapp2.RequestHandler):
             keep_going = experiment.survey_enabled
         elif name == "summary_screen":
             keep_going = experiment.summary_enabled
-        self.response.out.write(json.dumps(({'keep_going': keep_going})))
+        else:
+            logging.warning(f"Unknown condition name: {name}")
+            return jsonify({'keep_going': False, 'error': 'Unknown condition'}), 400
+            
+        logging.info(f"Condition check result for {name}: {keep_going}")
+        return jsonify({'keep_going': keep_going})
+    
+    except Exception as e:
+        logging.error(f"Error in check_condition_handler: {str(e)}")
+        logging.error(f"Full traceback: {traceback.format_exc()}")
+        return jsonify({'keep_going': False, 'error': 'Internal server error'}), 500

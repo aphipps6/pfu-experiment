@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Admin Dashboard</title>
-    <link rel="stylesheet" type="text/css" href="/css/information_styles.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/information_styles.css">
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
 
@@ -12,19 +12,42 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="/js/session_functions.js"></script>
+    <script src="/static/js/session_functions.js"></script>
 </head>
 <body>
 <div class="container-fluid">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible" role="alert">
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    <div class="row">
+        <div class="col-md-10 col-md-offset-1">
+            <h2>Current Experiment: 
+                {% if experiment_name %}
+                    <span class="label label-primary">{{ experiment_name }}</span>
+                {% else %}
+                    <span class="label label-default">None selected</span>
+                {% endif %}
+            </h2>
+        </div>
+    </div>
     <div class="row col-md-10 col-md-offset-1">
         <label for="graduation">Experiment Name:</label>
-        <input type="text" class="form-control" id="name">
-        <button class="btn btn-default" onclick=generateExperiment()>Generate</button>
-        <button class="btn btn-default" onclick=getExperiment()>Get</button>
-        <button class="btn btn-default" onclick=resetExperiment()>Reset</button>
-        <a class="btn btn-default" href="/admin/list_participants/?experiment={{ experiment }}">List Participants</a>
-        <a class="btn btn-default" href="/admin/generate_fake_participants/?experiment={{ experiment }}">Generate Fake Participants</a>
-    </div>
+        <input type="text" class="form-control" id="name" name="name">
+        <button class="btn btn-default" onclick="generateExperiment()">Generate</button>
+        <button class="btn btn-default" onclick="getExperiment()">Get</button>
+        <a href="{{ url_for('admin.reset_experiment', experiment_name=experiment_name) }}" class="btn btn-default">Reset Experiment</a>
+        <a class="btn btn-default" href="{{ url_for('admin.list_participants', experiment=experiment,experiment_name=experiment_name) }}"">List Participants</a>
+        <a class="btn btn-default" href="{{ url_for('admin.generate_fake_participants', experiment=experiment, experiment_name=experiment_name) }}">Generate Fake Participants</a>
+        </div>
     <div class="col-xs-12" style="height:50px;"></div>
     <div class="row col-md-10 col-md-offset-1">
         <ol>
@@ -48,7 +71,7 @@
             </tr>
             <tr>
                 <td>Welcome Screen</td>
-                <td><a class="btn btn-default" href="/admin/randomize_treatment/?experiment={{ experiment }}">Randomize Treatments</a></td>
+                <td><a class="btn btn-default" href="{{ url_for('admin.randomize_treatment', experiment=experiment, experiment_name=experiment_name) }}">Randomize Treatments</a></td>
                 {% for item in list_of_participants %}
                     <td>
                     {{ item.welcome_status }}
@@ -57,7 +80,7 @@
             </tr>
             <tr>
                 <td>Risk Assessment</td>
-                <td><a class="btn btn-default" href="/admin/enable_risk_assessment/?experiment={{ experiment }}">Enable Risk</a></td>
+                <td><a class="btn btn-default" href="{{ url_for('admin.enable_risk_assessment', experiment=experiment, experiment_name=experiment_name) }}">Enable Risk</a></td>
                 {% for item in list_of_participants %}
                     <td>
                     {{ item.risk_status }}
@@ -66,7 +89,7 @@
             </tr>
             <tr>
                 <td>Tutorial</td>
-                <td><a class="btn btn-default" href="/admin/enable_tutorial/?experiment={{ experiment }}">Enable Tutorial</a></td>
+                <td><a class="btn btn-default" href="{{ url_for('admin.enable_tutorial', experiment=experiment, experiment_name=experiment_name) }}">Enable Tutorial</a></td>
                 {% for item in list_of_participants %}
                     <td>
                     {{ item.tutorial_status }}
@@ -75,7 +98,7 @@
             </tr>
             <tr>
                 <td>Fixed Payment</td>
-                <td><a class="btn btn-default" href="/admin/enable_practice/?experiment={{ experiment }}">Enable Practice</a></td>
+                <td><a class="btn btn-default" href="{{ url_for('admin.enable_practice', experiment=experiment, experiment_name=experiment_name) }}">Enable Practice</a></td>
                 {% for item in list_of_participants %}
                     <td>
                     {{ item.practice_status }}
@@ -84,7 +107,7 @@
             </tr>
             <tr>
                 <td>Treatment 1</td>
-                <td><a class="btn btn-default" href="/admin/enable_session/?experiment={{ experiment }}">Enable Session</a></td>
+                <td><a class="btn btn-default" href="{{ url_for('admin.enable_session', experiment=experiment, experiment_name=experiment_name) }}">Enable Session</a></td>
                 {% for item in list_of_participants %}
                     <td>
                     {{ item.t1.rounds }} of {{ item.t1.total }}
@@ -102,7 +125,16 @@
             </tr>
             <tr>
                 <td>Survey</td>
-                <td><a class="btn btn-default" href="/admin/enable_survey/?experiment={{ experiment }}">Enable Survey</a></td>
+                <td><a class="btn btn-default" href="{{ url_for('admin.enable_survey', experiment=experiment, experiment_name=experiment_name) }}">Enable Survey</a></td>
+                {% for item in list_of_participants %}
+                    <td>
+                    {{ item.survey_status }}
+                    </td>
+                {% endfor %}
+            </tr>
+            <tr></tr>
+                <td>Summary Screen</td>
+                <td><a class="btn btn-default" href="{{ url_for('admin.enable_summary', experiment=experiment, experiment_name=experiment_name) }}">Enable Summary</a></td>
                 {% for item in list_of_participants %}
                     <td>
                     {{ item.survey_status }}

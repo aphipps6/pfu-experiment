@@ -2,8 +2,8 @@
 <html lang="en"><!DOCTYPE html>
 <html>
 <head>
-    <link rel="stylesheet" type="text/css" href="/css/session.css">
-    <link rel="stylesheet" type="text/css" href="/css/information_styles.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/session.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/information_styles.css">
 
     <title>Lotteries</title>
 
@@ -15,12 +15,11 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="/js/session_functions.js"></script>
+    <script src="/static/js/session_functions.js"></script>
 
 </head>
-
 <body>
-<div class="container-fluid">
+<div class="container-fluid"></div>
     <div class="row">
         <div class="col-md-6 col-md-offset-3">
         <p>In the table below, please select which option you would prefer (option A or B). <span class="bg-danger">
@@ -37,33 +36,164 @@
                     </tr>
                 </thead>
                 <tbody>
-                <form name="risk_form">
-                    {% for lottery in list_of_lotteries %}
-                        <tr>
-                            <td>
-                                {{ lottery.text_a | safe}}
-                            </td>
-                            <td>
-                                {{ lottery.text_b | safe}}
-                            </td>
-                            <td>
-                                <div class="radio">
-                                    <label><input type="radio" id="{{ lottery.id_a }}" name="{{ lottery.name }}">Option A</label>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="radio">
-                                    <label><input type="radio" id="{{ lottery.id_b }}" name="{{ lottery.name }}">Option B</label>
-                                </div>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </form>
+                    <form id="risk_form">
+                        {% for lottery in list_of_lotteries %}
+                            <tr>
+                                <td>
+                                    {{ lottery.text_a | safe}}
+                                </td>
+                                <td>
+                                    {{ lottery.text_b | safe}}
+                                </td>
+                                <td>
+                                    <div class="radio">
+                                        <label><input type="radio" id="{{ lottery.id_a }}" name="{{ lottery.name }}" value="A">Option A</label>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="radio">
+                                        <label><input type="radio" id="{{ lottery.id_b }}" name="{{ lottery.name }}" value="B">Option B</label>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </form>
                 </tbody>
             </table>
-        <button type="button" class="btn btn-default" id="btn_next_round" onclick=endRiskAssessment("{{ aversion_menu_name }}","{{ continue_link }}","{{ participant }}")>Continue</button>
+            <button type="button" class="btn btn-default" id="btn_next_round">Continue</button>
         </div>
     </div>
 </div>
+<script>
+    document.getElementById('btn_next_round').addEventListener('click', function() {
+        var form = document.forms["risk_form"];
+        var radioResults = [];
+        for (var i = 0; i < form.elements.length; i++) {
+            if (form.elements[i].type == 'radio' && form.elements[i].checked) {
+                radioResults.push(form.elements[i].id);
+            }
+        }
+    
+        if (radioResults.length !== parseInt('{{ list_of_lotteries|length }}')) {
+            alert("Please make a selection for each lottery before continuing.");
+            return;
+        }
+    
+        console.log("Radio Results:", radioResults);  // Log the results for debugging
+    
+        var this_data = JSON.stringify({
+            "radio_results": radioResults,
+            "menu_name": '{{ aversion_menu_name }}',
+            "session_id": '{{ session_id }}'
+        });
+    
+        console.log("Sending data:", this_data);  // Log the data being sent
+    
+        fetch('/risk_assessment_end/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: this_data,
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log("Redirecting to:", data.next_url); // Add this line for debugging
+                window.location.href = data.next_url || '{{ continue_link }}';
+            } else {
+                console.error("Error:", data.error); // Add this line for debugging
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again.');
+        });
+    });
+</script>
 </body>
 </html>
+
+
+<!--
+<div class="container-fluid"></div>
+    <div class="row">
+        <div class="col-md-6 col-md-offset-3">
+            <p>In the table below, please select which option you would prefer (option A or B). <span class="bg-danger">We will randomly select one of these rows and pick a number between 1 and 10. Your choice will determine how much you earn.</span></p>
+            <form id="risk-assessment-form">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Option A</th>
+                            <th>Option B</th>
+                            <th>Choice</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lottery in list_of_lotteries %}
+                        <tr>
+                            <td>{{ lottery.text_a | safe}}</td>
+                            <td>{{ lottery.text_b | safe}}</td>
+                            <td>
+                                <div class="radio">
+                                    <label>
+                                        <input type="radio" name="{{ lottery.id_a }}" value="A">
+                                        Option A
+                                    </label>
+                                </div>
+                                <div class="radio">
+                                    <label>
+                                        <input type="radio" name="{{ lottery.id_b }}" value="B">
+                                        Option B
+                                    </label>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <button type="submit" class="btn btn-primary">Continue</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<script>
+document.getElementById('risk-assessment-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    var formData = new FormData(this);
+    var results = {};
+    for (var pair of formData.entries()) {
+        results[pair[0]] = pair[1];
+    }
+    
+    fetch('/risk_assessment_end/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            radio_results: results,
+            menu_name: '{{ aversion_menu_name }}',
+            session_id: '{{ session_id }}'
+        }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = '{{ continue_link }}';
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    });
+});
+</script>
+
+-->

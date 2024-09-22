@@ -1,9 +1,11 @@
+from typing import Final
+
 class AdminConstants:
-    participation_fee = 6
-    practice_fee = 3
-    survey_fee = 0
-    max_earnings = 45
-    min_earnings = 12
-    constant_coefficients_easy = .06
-    constant_coefficients_hard = .13
-    time_value = .10
+    PARTICIPATION_FEE: Final[float] = 6.0
+    PRACTICE_FEE: Final[float] = 3.0
+    SURVEY_FEE: Final[float] = 0.0
+    MAX_EARNINGS: Final[float] = 45.0
+    MIN_EARNINGS: Final[float] = 12.0
+    CONSTANT_COEFFICIENTS_EASY: Final[float] = 0.06
+    CONSTANT_COEFFICIENTS_HARD: Final[float] = 0.13
+    TIME_VALUE: Final[float] = 0.10

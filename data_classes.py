@@ -1,5 +1,13 @@
-from google.appengine.ext import ndb
+from google.cloud import ndb
+import datetime
 
+client = ndb.Client()
+
+#def ndb_context(func):
+ #   def wrapper(*args, **kwargs):
+  #      with client.context():
+   #         return func(*args, **kwargs)
+    #return wrapper
 
 class AversionMenu(ndb.Model):
     """list_of_lotteries is a list of dictionaries"""
@@ -29,14 +37,13 @@ class AversionResult(ndb.Model):
 class QuestionClass(ndb.Model):
     """A set of properties for questions"""
     type_name = ndb.StringProperty()
-    hard_description = ndb.StringProperty(indexed=False)
-    easy_description = ndb.StringProperty(indexed=False)
+    hard_description = ndb.StringProperty()
+    easy_description = ndb.StringProperty()
     class_properties = ndb.JsonProperty(indexed=False)
 
 
 class ParticipantInformation(ndb.Model):
     """A model for information about users"""
-    _default_indexed = False
     participant_id = ndb.StringProperty()
     participant_name = ndb.StringProperty()
     survey_result = ndb.StructuredProperty(SurveyResponse)
@@ -50,7 +57,7 @@ class SubmittedQuestion(ndb.Model):
     question_key = ndb.KeyProperty()
     datetime_start = ndb.DateTimeProperty(indexed=False)
     datetime_end = ndb.DateTimeProperty(indexed=False)
-    submitted_answer = ndb.StringProperty(indexed=False)
+    submitted_answer = ndb.StringProperty()
 
 
 class ParticipantMultitaskRound(ndb.Model):
@@ -60,7 +67,7 @@ class ParticipantMultitaskRound(ndb.Model):
     datetime_end = ndb.DateTimeProperty()
     round_treatment_key = ndb.KeyProperty()
     round_number = ndb.IntegerProperty()
-    # submitted_questions = ndb.StructuredProperty(SubmittedQuestion, repeated=True)
+    
 
 
 class ParticipantMultitaskSession(ndb.Model):
@@ -101,14 +108,14 @@ class MultitaskRoundTreatment(ndb.Model):
 
 class Question(ndb.Model):
     """A model for question templates, from which questions are populated in the experiment"""
-    text = ndb.StringProperty(indexed=False)
-    answer = ndb.StringProperty(indexed=False)
+    text = ndb.StringProperty()
+    answer = ndb.StringProperty()
     difficulty = ndb.StringProperty()
     question_class = ndb.StringProperty()
 
 class Session(ndb.Model):
     email = ndb.StringProperty()
-    experiment_key = ndb.KeyProperty()
+    experiment_key = ndb.KeyProperty(kind='ExperimentManagement')
     current_step = ndb.IntegerProperty(default=0)
     last_activity = ndb.DateTimeProperty(auto_now=True)
     active = ndb.BooleanProperty(default=True)
@@ -128,9 +135,18 @@ class ExperimentManagement(ndb.Model):
     tutorial_session_id = ndb.KeyProperty(indexed=False)
     practice_session_id = ndb.KeyProperty(indexed=False)
     treatment_session_id_list = ndb.JsonProperty(indexed=False)
-    risk_assessment_enabled = ndb.BooleanProperty(indexed=False)
-    tutorial_enabled = ndb.BooleanProperty(indexed=False)
-    practice_enabled = ndb.BooleanProperty(indexed=False)
-    session_enabled = ndb.BooleanProperty(indexed=False)
-    survey_enabled = ndb.BooleanProperty(indexed=False)
-    summary_enabled = ndb.BooleanProperty(indexed=False)
+    risk_assessment_enabled = ndb.BooleanProperty(indexed=False, default=False)
+    tutorial_enabled = ndb.BooleanProperty(indexed=False, default=False)
+    practice_enabled = ndb.BooleanProperty(indexed=False, default=False)
+    session_enabled = ndb.BooleanProperty(indexed=False, default=False)
+    survey_enabled = ndb.BooleanProperty(indexed=False, default=False)
+    summary_enabled = ndb.BooleanProperty(indexed=False, default=False)
+
+
+#@ndb_context
+#def get_participant_by_id(participant_id):
+    #return ParticipantInformation.query(ParticipantInformation.participant_id == participant_id).get()
+
+#@ndb_context
+#def get_active_experiment():
+    #return ExperimentManagement.query(ExperimentManagement.experiment_running == True).get()

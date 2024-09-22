@@ -1,11 +1,12 @@
-import jinja2
+from flask import Flask
+from jinja2 import Environment, FileSystemLoader
 import os
 
 def jinja_render(template_name, template_values):
-    JINJA_ENVIRONMENT = jinja2.Environment(
-        loader=jinja2.FileSystemLoader((os.path.dirname(__file__), 'templates', 'static')),
-        extensions=['jinja2.ext.autoescape'],
+    template_dir = os.path.join(os.path.dirname(__file__), 'templates')
+    env = Environment(
+        loader=FileSystemLoader(template_dir),
         autoescape=True
     )
-    template = JINJA_ENVIRONMENT.get_template(template_name)
+    template = env.get_template(template_name)
     return template.render(template_values)

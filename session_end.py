@@ -1,25 +1,24 @@
-from google.appengine.api import users
-from data_classes import *
-from generate_data import *
-from flow_control import *
-import json
-import jinja2
-import webapp2
+from flask import request, redirect
+from flask import session as flask_session
+from google.cloud import ndb
 import datetime
+from data_classes import *
+from flow_control import UserFlowControl, flow_control
+import logging
 
-import os, sys
-import jinja2
-import webapp2
+def end_session():
+    session_id = request.args.get('session_id')
+    participant_session_key = flask_session.pop('participant_session_key', None)
+    
+    session = Session.get_by_id(session_id)
+    if not session:
+        return redirect('/')  # Redirect to home if session not found
 
+    participant_session = ndb.Key(urlsafe=participant_session_key).get()
+    participant_session.datetime_end = datetime.datetime.now()
+    participant_session.put()
 
-class EndSessionHandler(webapp2.RequestHandler):
-    def get(self):
-        this_session = ndb.Key(urlsafe=self.request.get('session_key')).get()
-        this_session.datetime_end = datetime.datetime.now()
-        this_session.put()
-        step = self.request.get('step')
-        participant_key = this_session.key.parent().urlsafe()
-        experiment_key = this_session.key.parent().parent().urlsafe()
-        url = UserFlowControl().get_next_url(current_step=step, participant_key=participant_key,
-                                             experiment_key=experiment_key)
-        self.redirect(url)
+    # Get the next URL
+    url = UserFlowControl().get_next_url(session_id=session_id)
+
+    return redirect(url)

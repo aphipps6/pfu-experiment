@@ -1,0 +1,21 @@
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 112-767-273
+INFO:werkzeug:127.0.0.1 - - [20/Sep/2024 13:06:46] "[35m[1mGET /check_continue_condition/?name=risk_assessment&amp;session_id=528592b9-d873-4b5f-a408-7256edb1299a&{} HTTP/1.1[0m" 500 -
+INFO:werkzeug: * Detected change in 'C:\\Users\\aaron.phipps\\OneDrive - West Point\\Documents\\GitHub\\pfu-experiment\\main.py', reloading
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 112-767-273
+INFO:werkzeug:127.0.0.1 - - [20/Sep/2024 13:07:20] "GET /pause/?name=risk_assessment&url=/risk_assessment/?session_id%3D528592b9-d873-4b5f-a408-7256edb1299a%26step%3D1&session_id=528592b9-d873-4b5f-a408-7256edb1299a HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [20/Sep/2024 13:07:20] "[36mGET /static/css/information_styles.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [20/Sep/2024 13:07:20] "[36mGET /static/js/session_functions.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [20/Sep/2024 13:07:20] "[35m[1mGET /check_continue_condition/?name=risk_assessment&amp;session_id=528592b9-d873-4b5f-a408-7256edb1299a&{} HTTP/1.1[0m" 500 -
+INFO:werkzeug: * Detected change in 'C:\\Users\\aaron.phipps\\OneDrive - West Point\\Documents\\GitHub\\pfu-experiment\\flow_control.py', reloading
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 112-767-273
+INFO:werkzeug:127.0.0.1 - - [20/Sep/2024 13:08:36] "GET /pause/?name=risk_assessment&url=/risk_assessment/?session_id%3D528592b9-d873-4b5f-a408-7256edb1299a%26step%3D1&session_id=528592b9-d873-4b5f-a408-7256edb1299a HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [20/Sep/2024 13:08:36] "[36mGET /static/css/information_styles.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [20/Sep/2024 13:08:36] "[36mGET /static/js/session_functions.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [20/Sep/2024 13:08:36] "[35m[1mGET /check_continue_condition/?name=risk_assessment&amp;session_id=528592b9-d873-4b5f-a408-7256edb1299a&{} HTTP/1.1[0m" 500 -
+INFO:werkzeug: * Detected change in 'C:\\Users\\aaron.phipps\\OneDrive - West Point\\Documents\\GitHub\\pfu-experiment\\flow_control.py', reloading
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 112-767-273
+INFO:werkzeug: * Detected change in 'C:\\Users\\aaron.phipps\\OneDrive - West Point\\Documents\\GitHub\\pfu-experiment\\main.py', reloading

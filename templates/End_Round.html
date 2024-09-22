@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>End Round</title>
-    <link rel="stylesheet" type="text/css" href="/css/session.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/session.css">
 
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
@@ -16,7 +16,7 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <script src="/js/session_functions.js"></script>
+    <script src="/static/js/session_functions.js"></script>
 
 </head>
 <body onbeforeunload="return navigationWarningMessage" {% block body_atr%}{% endblock %}>
@@ -156,7 +156,7 @@
                     </tr>
                 </tbody>
             </table>
-            <button type="button" class="btn btn-default" id="btn_next_round" onclick=continueToNextRound("{{ continue_link }}")>Continue</button>
+            <button type="button" class="btn btn-default" id="btn_next_round" onclick="continueToNextRound('{{ continue_link }}')">Continue</button>
         </div>
     </div>
 </div>
