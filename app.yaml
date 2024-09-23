@@ -1,4 +1,5 @@
 runtime: python311
+instance_class: F1
 entrypoint: gunicorn -b :$PORT main:app
 
 handlers:
@@ -10,3 +11,6 @@ handlers:
 
 env_variables:
   FLASK_ENV: 'production'
+  
+
+
