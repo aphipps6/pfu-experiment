@@ -370,6 +370,28 @@ function startRoundEndTour() {
     tour.start();
 }
 
+function endSurvey(session_id,continue_link){
+    var formResults = {
+        'graduation_year': document.getElementById('graduation').value,
+        'country': document.getElementById('country').value,
+        'male': document.getElementById('male').checked,
+        'female': document.getElementById('female').checked,
+        'age': document.getElementById('age').value
+    };
+    
+    var this_data = JSON.stringify({'results': formResults,'session_id':session_id});
+    $.ajax({
+        type: "POST",
+        url: "/survey_end/",
+        dataType: 'json',
+        contentType: "application/json",  // Add this line
+        data: this_data,
+        success: function(result){
+            window.location.href = continue_link;
+        }
+    });
+}
+
 function continueToNextRound(new_link){
     window.onbeforeunload = null;
     window.location.href = new_link;

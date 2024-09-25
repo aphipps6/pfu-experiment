@@ -13,7 +13,7 @@ if lib_path not in sys.path:
     sys.path.insert(0, lib_path)
 
 
-from flask import Flask, request, jsonify, send_file, redirect, url_for
+from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for
 from google.cloud import ndb
 
 
@@ -26,7 +26,7 @@ from session_instructions import session_instructions
 from risk_assessment import end_risk_assessment, risk_assessment
 from administrator import admin, admin_homepage, admin_prompts, download_aversion_data, download_multitask_data, enable_practice, enable_risk_assessment, enable_session, enable_survey, enable_tutorial, generate_experiment, generate_fake_participants, get_earnings, get_experiment, list_participants, randomize_treatment, reset_experiment
 from summary_screen import summary_screen
-from data_classes import client
+from data_classes import NoMatchingRoundTreatmentError, NoMatchingSubmittedQuestionError, client
 
 from flow_control import check_condition, flow_control, UserFlowControl, pause_function
 from administrator import admin
@@ -47,6 +47,52 @@ def ndb_wsgi_middleware(wsgi_app):
     return middleware
 
 app.wsgi_app = ndb_wsgi_middleware(app.wsgi_app)
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    session_id = request.args.get('session_id', '')
+    treatment = request.args.get('treatment', '')
+    next_url = None
+
+    if isinstance(e, NoMatchingRoundTreatmentError):
+        # Log the specific error
+        app.logger.warning(f"NoMatchingRoundTreatmentError: {str(e)}")
+        try:
+            next_url = UserFlowControl().get_next_url(session_id)
+            return redirect(next_url)
+        except Exception as inner_e:
+            app.logger.error(f'Error getting next URL: {str(inner_e)}')
+    elif isinstance(e, NoMatchingSubmittedQuestionError):
+        app.logger.warning(f"NoMatchingSubmittedQuestionError: {str(e)}")
+        try:
+            next_url = UserFlowControl().get_next_url(session_id)
+            return redirect(next_url)
+        except Exception as inner_e:
+            app.logger.error(f'Error getting next URL: {str(inner_e)}')
+    else:
+        # Log other unhandled exceptions
+        app.logger.error(f'Unhandled Exception: {str(e)}')
+
+    try:
+        if not next_url:
+            next_url = UserFlowControl().get_next_url(session_id)
+    except Exception as inner_e:
+        app.logger.error(f'Error getting next URL: {str(inner_e)}')
+
+    return redirect(url_for('error_page', session_id=session_id, treatment=treatment, next_url=next_url))
+
+@app.route('/error')
+def error_page():
+    session_id = request.args.get('session_id', '')
+    treatment = request.args.get('treatment', '')
+    next_url = request.args.get('next_url', '')
+    return render_template('error.html', session_id=session_id, treatment=treatment, next_url=next_url)
+
+@app.route('/recover')
+def recover():
+    session_id = request.args.get('session_id', '')
+    next_url = UserFlowControl().get_next_url(session_id)
+    return redirect(next_url)
 
 @app.route('/')
 def welcome_screen():

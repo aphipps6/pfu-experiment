@@ -1,6 +1,6 @@
 import datetime
 import logging
-from data_classes import MultitaskRoundTreatment, ParticipantInformation, ParticipantMultitaskRound, ParticipantMultitaskSession, Question, Session, SubmittedQuestion, client
+from data_classes import MultitaskRoundTreatment, NoMatchingRoundTreatmentError, NoMatchingSubmittedQuestionError, ParticipantInformation, ParticipantMultitaskRound, ParticipantMultitaskSession, Question, Session, SubmittedQuestion, client
 from jinja_render import jinja_render
 from data_constants import *
 from google.cloud import ndb
@@ -13,6 +13,14 @@ from flask import session as flask_session
 def round_running():
     session_id = request.args.get('session_id', default='')
     treatment = request.args.get('treatment', default='')
+    step_str = request.args.get('step')
+
+    # Safely convert step to an integer
+    try:
+        step = int(step_str)
+    except (ValueError, TypeError):
+        # Handle the error - redirect to an error page or set a default value
+        return redirect(url_for('error_page', message="Invalid step value"))
     
     if not treatment:
         logging.error(f"Missing treatment value for session {session_id}")
@@ -26,7 +34,9 @@ def round_running():
         message = urllib.parse.urlencode({'redirect_message': 'page: /round_running/. Session not found'})
         return redirect(f"/?{message}")
     
-    step = session.current_step
+    session.current_step = step
+    session.put()
+
     experiment = session.experiment_key.get()
     #treatment_group = experiment.treatment_group
     participant = ParticipantInformation.query(ParticipantInformation.participant_id == session.email).get()
@@ -35,8 +45,40 @@ def round_running():
     test_round_key = flask_session.get('round_key')
     if test_round_key:
         logging.warning(f"Round key found in flask session when there shouldn't be one -- probably hit refresh")
-        logging.warning(f"ending round {test_round_key}")
-        redirect = url_for('end_round_handler', session_id=session_id, treatment=treatment)
+        # if there is a round key here, should try to just start it again and not create a new one
+        # first, need to get the round object
+        test_round = ndb.Key(urlsafe=test_round_key).get()
+        if test_round:
+            try:
+                participant_session_key = flask_session.get('participant_session_key')
+                if not participant_session_key:
+                    # if there is no participant session key, then there is no way to know what session this round belongs to
+                    # should just redirect to the next step
+                    return redirect(url_for('end_session_handler', session_id=session_id, treatment=treatment))
+                participant_session = ndb.Key(urlsafe=participant_session_key).get()
+                if not participant_session:
+                    # if there is no participant session, then there is no way to know what session this round belongs to
+                    # should just redirect to the next step
+                    return redirect(url_for('end_session_handler', session_id=session_id, treatment=treatment))
+                session_treatment = participant_session.session_treatment_key.get()
+                total_rounds = get_number_of_rounds(session_treatment.key)
+
+                return set_up_round(
+                    round_treatment=test_round.round_treatment_key.get(), 
+                    round_number=test_round.round_number, 
+                    round_key=test_round.key, 
+                    session_treatment=session_treatment, 
+                    session_id=session_id, 
+                    treatment=treatment, 
+                    total_rounds=total_rounds, 
+                    participant=participant)
+            except Exception as e:
+                logging.error(f"Error trying to restart round. Error: {str(e)}")
+                return redirect(url_for('end_session_handler', session_id=session_id, treatment=treatment))
+        else:
+            logging.warning(f"Round key found in flask session but round object not found")
+            return redirect(url_for('end_session_handler', session_id=session_id, treatment=treatment))
+    
     
     # Check for participant session key in flask session
     participant_session_key = flask_session.get('participant_session_key')
@@ -66,7 +108,11 @@ def round_running():
                 session_treatment_key = ndb.Key(urlsafe=participant.treatment_keys[index])
             except (ValueError, IndexError):
                     # Handle invalid treatment value
-                raise ValueError(f"Invalid treatment value: {treatment}")
+                    # could handle this more gracefully by redirecting to an error page
+                #raise ValueError(f"Invalid treatment value: {treatment}")
+                next_url = UserFlowControl().get_next_url(session_id=session_id)
+                return redirect(next_url)
+            
         logging.info(f"Checking for existing ParticipantMultitaskSession for participant {participant.participant_id}, session_id: {session_id}")
         participant_session = ParticipantMultitaskSession.query(
             ancestor=participant.key
@@ -91,23 +137,25 @@ def round_running():
     # 2 - set up this round and round treatment
     # how many rounds in all? get all treatmentRounds tied to this session treatment
     
-    total_rounds = MultitaskRoundTreatment.query(ancestor=session_treatment.key).count()
+    total_rounds = get_number_of_rounds(session_treatment.key)
 
     # get round treatment
     round_number = ParticipantMultitaskRound.query(ancestor=participant_session.key).count()
     #round_treatment = MultitaskRoundTreatment.query(ancestor=participant_session.session_treatment_key).get()
-    round_treatment = MultitaskRoundTreatment.query(
-        MultitaskRoundTreatment.round_number == round_number,
-        ancestor=participant_session.session_treatment_key
-    ).get()
+    round_treatment = get_round_treatment(participant_session, round_number)
 
     if not round_treatment:
         # Handle the case where no matching round treatment is found
-        return "No matching round treatment found", 404
+        raise NoMatchingRoundTreatmentError("No matching round treatment found")
 
+    # check if this is an extra round because of back button or refresh
+    if round_number >= total_rounds:
+        return redirect(url_for('end_session_handler', session_id=session_id, treatment=treatment))
 
-
-
+    #####
+    # can add some logic here to load the current round in flask if there is one. Currently it just ends the round if one is found
+    #####
+    
     # create round record
     this_round = ParticipantMultitaskRound(
         parent=participant_session.key,
@@ -119,6 +167,11 @@ def round_running():
     # this makes it easy to pass round_key to the round_end screen
     flask_session['round_key'] = round_key.urlsafe().decode()
 
+    # set up the round
+    return set_up_round(round_treatment, round_number, round_key, session_treatment, session_id, treatment, total_rounds, participant)
+
+
+def set_up_round(round_treatment, round_number, round_key, session_treatment, session_id, treatment, total_rounds, participant):
     # set up round
     round_minutes = round_treatment.time_limit_minutes
     round_minutes_string = f"{int(round_minutes):02d}"
@@ -151,13 +204,21 @@ def round_running():
         'total_rounds': total_rounds,
         'participant': participant.participant_id,
         'price_info': price_info,
-        'step': step
+        #'step': step
     }
 
-    ## REMOVED FOR DEBUGGING PURPOSES
-    #template_name = "Tour_Round.html" if on_tour else "InSession_Running_Main.html"
-    template_name =  "InSession_Running_Main.html"
+    template_name = "Tour_Round.html" if on_tour else "InSession_Running_Main.html"
     return render_template(template_name, **template_values)
+
+def get_number_of_rounds(session_treatment_key):
+    return MultitaskRoundTreatment.query(ancestor=session_treatment_key).count()
+
+def get_round_treatment(participant_session, round_number):
+    round_treatment = MultitaskRoundTreatment.query(
+        MultitaskRoundTreatment.round_number == round_number,
+        ancestor=participant_session.session_treatment_key
+        ).get()
+    return round_treatment
 
 def create_participant_session(session_treatment_key, participant):
     # the session_treatment_key is links to set of questions and payoffs
@@ -181,7 +242,7 @@ def question_submission():
     try:
         submitted_question = ndb.Key(urlsafe=submitted_question_key).get()
         if not submitted_question:
-            return jsonify({'error': 'Submitted question not found'}), 404
+            raise NoMatchingSubmittedQuestionError("No matching submitted question found")
         
         submitted_question.datetime_end = datetime.datetime.now()
         submitted_question.submitted_answer = data.get('submitted_answer')
@@ -260,3 +321,4 @@ def get_new_question(difficulty, this_round, question_number):
         round_question_key = sorted(list_of_keys)[question_number]
     question = round_question_key.get()
     return question
+

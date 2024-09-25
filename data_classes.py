@@ -142,6 +142,12 @@ class ExperimentManagement(ndb.Model):
     survey_enabled = ndb.BooleanProperty(indexed=False, default=False)
     summary_enabled = ndb.BooleanProperty(indexed=False, default=False)
 
+class NoMatchingRoundTreatmentError(Exception):
+    pass
+
+class NoMatchingSubmittedQuestionError(Exception):
+    pass
+
 
 #@ndb_context
 #def get_participant_by_id(participant_id):

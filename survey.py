@@ -8,13 +8,22 @@ from jinja_render import jinja_render
 
 def survey_load():
     session_id = request.args.get('session_id')
+    step_str = request.args.get('step')
+
+    # Safely convert step to an integer
+    try:
+        step = int(step_str)
+    except (ValueError, TypeError):
+        # Handle the error - redirect to an error page or set a default value
+        return redirect(url_for('error_page', message="Invalid step value"))
     
     session = Session.get_by_id(session_id)
     if not session:
         return redirect(url_for('welcome_screen'))
-    
+    session.current_step = step
+    session.put()
     template_values = {
-        'continue_link': UserFlowControl().get_next_url(session_id=session_id),
+        'continue_link': UserFlowControl().get_next_url(session_id=session_id, increment=False),
         'session_id': session_id,
         'survey_price': f"${AdminConstants.SURVEY_FEE:.2f}"
     }
@@ -37,6 +46,7 @@ def survey_end():
     survey_response = SurveyResponse(survey_name='pilot', list_of_responses=survey_results)
     participant.survey_result = survey_response
     participant.put()
+    
     
     return jsonify({'success': True})
   

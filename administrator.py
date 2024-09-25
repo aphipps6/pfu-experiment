@@ -176,6 +176,7 @@ def get_earnings():
         experiment = ExperimentManagement.query(ExperimentManagement.experiment_name == experiment_name).fetch(1)[0]
         list_of_participants = ParticipantInformation.query(ancestor=experiment.key).fetch()
         for p in list_of_participants:
+            # could refactor this from the function in Summary.py to ensure consistency
             this_list_of_earnings = [
                 ['Participation', AdminConstants.PARTICIPATION_FEE],
                 ['Lottery Winnings', AdminFunctions.get_lottery_winnings(participant=p)],
@@ -313,7 +314,7 @@ def generate_fake_participants():
     experiment_name = request.args.get('experiment_name', default='')
     if experiment_key == '':
         return make_response("No experiment provided", 400)
-    HelperFunctions.generate_fake_users(number_of_users=5, experiment_key_urlsafe=experiment_key.urlsafe.encode())
+    HelperFunctions.generate_fake_users(number_of_users=5, experiment_key_urlsafe=experiment_key.encode())
     return redirect(url_for('admin.admin_homepage', experiment=experiment_key,experiment_name=experiment_name))
 
 class AdminFunctions:

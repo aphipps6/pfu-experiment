@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+    <html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>End Round</title>
+    <link rel="stylesheet" type="text/css" href="/static/css/session.css">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <!-- Bootstrap JS -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+    {% block additional_header %}{% endblock %}
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script src="/static/js/session_functions.js"></script>
+
+</head>
+
+<body>
+    <h1>Oops! Something went wrong.</h1>
+    <p>We encountered an unexpected error. We apologize for the inconvenience.</p>
+    
+    {% if next_url %}
+        <p>You can try to continue from where you left off:</p>
+        <a href="{{ next_url }}">Continue to Next Step</a>
+    {% else %}
+        <p>Unfortunately, we couldn't determine your next step. Please start over:</p>
+        <a href="{{ url_for('welcome_screen') }}">Return to Home</a>
+    {% endif %}
+    
+    {% if session_id %}
+        <p>Your session ID: {{ session_id }}</p>
+    {% endif %}
+    
+    {% if treatment %}
+        <p>Your treatment: {{ treatment }}</p>
+    {% endif %}
+</body>
+</html>

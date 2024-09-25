@@ -47,6 +47,7 @@
         <a href="{{ url_for('admin.reset_experiment', experiment_name=experiment_name) }}" class="btn btn-default">Reset Experiment</a>
         <a class="btn btn-default" href="{{ url_for('admin.list_participants', experiment=experiment,experiment_name=experiment_name) }}"">List Participants</a>
         <a class="btn btn-default" href="{{ url_for('admin.generate_fake_participants', experiment=experiment, experiment_name=experiment_name) }}">Generate Fake Participants</a>
+        <a class="btn btn-default" href="{{ url_for('admin.get_earnings', experiment=experiment, experiment_name=experiment_name) }}">Show Earnings</a>
         </div>
     <div class="col-xs-12" style="height:50px;"></div>
     <div class="row col-md-10 col-md-offset-1">

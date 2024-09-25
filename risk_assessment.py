@@ -11,8 +11,15 @@ from flow_control import UserFlowControl
 
 def risk_assessment():
     session_id = request.args.get('session_id', default='')
-    step = request.args.get('step')
+    step_str = request.args.get('step')
 
+    # Safely convert step to an integer
+    try:
+        step = int(step_str)
+    except (ValueError, TypeError):
+        # Handle the error - redirect to an error page or set a default value
+        return redirect(url_for('error_page', message="Invalid step value"))
+    
     logging.info(f"Risk assessment started for session_id: {session_id}")
 
     if session_id == '':
@@ -24,6 +31,9 @@ def risk_assessment():
     if not session:
         logging.error(f"Session not found for id: {session_id}")
         return redirect(url_for('welcom_screen'))
+
+    session.current_step = step
+    session.put()
 
     this_menu = AversionMenu.query(AversionMenu.aversion_menu_name == SessionConstants.standard_aversion_menu_name).get()
     list_of_lotteries = this_menu.list_of_lotteries
@@ -72,9 +82,12 @@ def end_risk_assessment():
     participant.aversion = aversion_results
     participant.put()
 
+    
     logging.info(f"Risk assessment completed for session {session_id}, participant {session.email}")
     next_url = UserFlowControl().get_next_url(session_id=session_id)
-    
+    # increment the step HERE -- once the assessment is successfully stored
+
+
     parsed_url = urllib.parse.urlparse(next_url)
     query_params = urllib.parse.parse_qs(parsed_url.query)
     query_params['session_id'] = [session_id]

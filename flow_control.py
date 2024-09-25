@@ -21,7 +21,7 @@ class UserFlowControl:
     tutorial_string = "tutorial"
     practice_string = "practice_round"
     
-    def get_next_url(self, session_id, pause=True, return_dict=False, proctor=False):
+    def get_next_url(self, session_id, pause=True, return_dict=False, proctor=False, increment = False):
         if not proctor:
             logging.info(f"Getting next URL for session_id: {session_id}")
         
@@ -29,11 +29,14 @@ class UserFlowControl:
             if not session:
                 logging.error(f"Session not found for id: {session_id}")
                 return '/'  # Redirect to start if session not found
-                
+
+            # the welcome screen needs the continue link to be set for the hnext step
+            # This is only for recovery purposes
+            if increment == True:
+                session.current_step += 1
+                session.put()
             next_step = session.current_step + 1
-            session.current_step = next_step
-            session.put()
-           # guide_info = f'session_id={session_id}&step={next_step}'
+            
         
         else:
            # guide_info = f'session_id=&step=0'
@@ -41,13 +44,13 @@ class UserFlowControl:
 
         url_order = {
             0: {'name': 'welcome_screen', 'url': '/'},
-            1: {'name': 'risk_assessment', 'url': url_for('risk_assessment_handler',session_id=session_id)},  
-            2: {'name': UserFlowControl.tutorial_string, 'url': url_for('in_round_running_main',session_id=session_id, treatment=SessionConstants.tutorial_string)}, 
-            3: {'name': UserFlowControl.practice_string, 'url': url_for('in_round_running_main', session_id=session_id,treatment=SessionConstants.practice_string)},  
-            4: {'name': 'treatment_1', 'url': url_for('in_round_running_main',session_id=session_id,treatment=1)},  
-            5: {'name': 'treatment_2', 'url': url_for('in_round_running_main',session_id=session_id,treatment=2)},  
-            6: {'name': 'survey', 'url': url_for('survey_handler',session_id=session_id,treatment=SessionConstants.survey_string)},  
-            7: {'name': 'summary_screen', 'url': url_for('summary_screen_handler',session_id=session_id)},  
+            1: {'name': 'risk_assessment', 'url': url_for('risk_assessment_handler',session_id=session_id, step=next_step)},  
+            2: {'name': UserFlowControl.tutorial_string, 'url': url_for('in_round_running_main',session_id=session_id, treatment=SessionConstants.tutorial_string, step=next_step)}, 
+            3: {'name': UserFlowControl.practice_string, 'url': url_for('in_round_running_main', session_id=session_id,treatment=SessionConstants.practice_string, step=next_step)},  
+            4: {'name': 'treatment_1', 'url': url_for('in_round_running_main',session_id=session_id,treatment=1, step=next_step)},  
+            5: {'name': 'treatment_2', 'url': url_for('in_round_running_main',session_id=session_id,treatment=2, step=next_step)},  
+            6: {'name': 'survey', 'url': url_for('survey_handler',session_id=session_id,treatment=SessionConstants.survey_string, step=next_step)},  
+            7: {'name': 'summary_screen', 'url': url_for('summary_screen_handler',session_id=session_id, step=next_step)},  
         }
         
         if next_step >= len(url_order):

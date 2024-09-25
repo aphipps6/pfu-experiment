@@ -19,7 +19,7 @@ def end_round():
     if not session:
         logging.error(f"Session not found for key {session_id}")
         return redirect('/')
-    
+    step = session.current_step
     this_round = ndb.Key(urlsafe=round_key).get()
     if not this_round:
         logging.error(f"Round not found for key {round_key}")
@@ -39,12 +39,13 @@ def end_round():
         
     is_tour = participant_session.session_treatment_key.get().treatment_type == SessionConstants.tutorial_string
 
+    logging.info(f"THIS IS ROUND: {this_round.round_number}")
     # set continue link to go to next round if this isn't the last
-    if this_round.round_number + 1 >= MultitaskRoundTreatment.query(
+    if this_round.round_number +1 >= MultitaskRoundTreatment.query(
             ancestor=participant_session.session_treatment_key).count():
-        continue_link = url_for('end_session_handler', session_id=session_id,treatment=treatment)
+        continue_link = url_for('end_session_handler', session_id=session_id,treatment=treatment, step=step)
     else:
-        continue_link = url_for('in_round_running_main', session_id=session_id,treatment=treatment)
+        continue_link = url_for('in_round_running_main', session_id=session_id,treatment=treatment, step=step)
 
     list_of_round_results = get_list_of_round_results(participant_session_key)
     this_round.earnings = list_of_round_results[-1]['total_payoff']

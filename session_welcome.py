@@ -40,9 +40,24 @@ def session_welcome():
         if not participant:
             participant = generate_participant_record(email=email, experiment_key=experiment_key)
         
+        # check if in current session:
+        query = Session.query(
+            Session.email == email,
+            Session.experiment_key == experiment_key,
+            Session.active == True
+        )
+        session = query.get()
+        if session:
+            session_id = session.key.id()
+            logging.info(f"Found active session for email: {email}")
+            # if session step is 0, need to increment
+            continue_link = UserFlowControl().get_next_url(session_id=session_id)
+            return redirect(continue_link)
+
         session_id = create_session(email, experiment_key=experiment_key,experiment_name = experiment_name)
         logging.info(f"Created session with id: {session_id}")
         continue_link = UserFlowControl().get_next_url(session_id=session_id)
+        
     else:
         continue_link = '/'
 
