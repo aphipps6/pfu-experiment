@@ -41,73 +41,72 @@ def admin_homepage():
     return render_template('Admin_Dashboard.html', **template_values)
 
 def get_list_of_participants(experiment_key_urlsafe):
-    with get_ndb_context():
-        participants = ParticipantInformation.query(ancestor=ndb.Key(urlsafe=experiment_key_urlsafe)).fetch()
-        list_of_participants = []
-        for p in participants:
-            risk_status = 'Completed' if p.aversion is not None else ''
-            tutorial_status = ''
-            practice_status = ''
-            t1 = {'round': '', 'total': ''}
-            t2 = {'round': '', 'total': ''}
-            survey_status = ''
+    
+    participants = ParticipantInformation.query(ancestor=ndb.Key(urlsafe=experiment_key_urlsafe)).fetch()
+    list_of_participants = []
+    for p in participants:
+        risk_status = 'Completed' if p.aversion is not None else ''
+        tutorial_status = ''
+        practice_status = ''
+        t1 = {'round': '', 'total': ''}
+        t2 = {'round': '', 'total': ''}
+        survey_status = ''
 
-            p_rounds = ParticipantMultitaskRound.query(ancestor=p.key).fetch()
-            p_sessions = ParticipantMultitaskSession.query(ancestor=p.key).fetch()
+        p_rounds = ParticipantMultitaskRound.query(ancestor=p.key).fetch()
+        p_sessions = ParticipantMultitaskSession.query(ancestor=p.key).fetch()
 
-            session_treatments = [i.session_treatment_key.get() for i in p_sessions]
+        session_treatments = [i.session_treatment_key.get() for i in p_sessions]
 
-            if SessionConstants.tutorial_string in [i.treatment_type for i in session_treatments]:
-                t_session = next((i for i in p_sessions if i.session_treatment_key == next((j.key for j in session_treatments if j.treatment_type == SessionConstants.tutorial_string), None)), None)
-                if t_session and t_session.datetime_end is not None:
-                    tutorial_status = 'Completed'
-                elif t_session:
-                    tutorial_status = 'Started'
+        if SessionConstants.tutorial_string in [i.treatment_type for i in session_treatments]:
+            t_session = next((i for i in p_sessions if i.session_treatment_key == next((j.key for j in session_treatments if j.treatment_type == SessionConstants.tutorial_string), None)), None)
+            if t_session and t_session.datetime_end is not None:
+                tutorial_status = 'Completed'
+            elif t_session:
+                tutorial_status = 'Started'
 
-            if SessionConstants.practice_string in [i.treatment_type for i in session_treatments]:
-                practice_session = next((i for i in p_sessions if i.session_treatment_key == next((j.key for j in session_treatments if j.treatment_type == SessionConstants.practice_string), None)), None)
-                if practice_session and practice_session.datetime_end is not None:
-                    practice_status = 'Completed'
-                elif practice_session:
-                    practice_status = 'Started'
+        if SessionConstants.practice_string in [i.treatment_type for i in session_treatments]:
+            practice_session = next((i for i in p_sessions if i.session_treatment_key == next((j.key for j in session_treatments if j.treatment_type == SessionConstants.practice_string), None)), None)
+            if practice_session and practice_session.datetime_end is not None:
+                practice_status = 'Completed'
+            elif practice_session:
+                practice_status = 'Started'
 
-            treatment_sessions = [i for i in session_treatments if i.treatment_type not in [SessionConstants.practice_string, SessionConstants.tutorial_string]]
-            p_treatment_sessions = [i for i in p_sessions if i.session_treatment_key in [j.key for j in treatment_sessions]]
+        treatment_sessions = [i for i in session_treatments if i.treatment_type not in [SessionConstants.practice_string, SessionConstants.tutorial_string]]
+        p_treatment_sessions = [i for i in p_sessions if i.session_treatment_key in [j.key for j in treatment_sessions]]
 
-            started_sessions = [i for i in p_treatment_sessions if i.datetime_start is not None]
-            if len(started_sessions) == 1:
-                t1_treatment_round_keys = MultitaskRoundTreatment.query(ancestor=treatment_sessions[0].key).fetch(keys_only=True)
-                t1_rounds = [r for r in p_rounds if r.round_treatment_key in t1_treatment_round_keys]
-                n_rounds = len([i for i in t1_rounds if i.datetime_end is not None])
-                total_rounds = len(t1_treatment_round_keys)
-                t1 = {'rounds': n_rounds, 'total': total_rounds}
-            elif len(started_sessions) > 1:
-                treatment_sessions.sort(key=lambda x: next((i.datetime_start for i in p_sessions if x.key == i.session_treatment_key), None))
-                t1_treatment_round_keys = MultitaskRoundTreatment.query(ancestor=treatment_sessions[0].key).fetch(keys_only=True)
-                t1_rounds = [r for r in p_rounds if r.round_treatment_key in t1_treatment_round_keys]
-                n_rounds = len([i for i in t1_rounds if i.datetime_end is not None])
-                total_rounds = len(t1_treatment_round_keys)
-                t1 = {'rounds': n_rounds, 'total': total_rounds}
+        started_sessions = [i for i in p_treatment_sessions if i.datetime_start is not None]
+        if len(started_sessions) == 1:
+            t1_treatment_round_keys = MultitaskRoundTreatment.query(ancestor=treatment_sessions[0].key).fetch(keys_only=True)
+            t1_rounds = [r for r in p_rounds if r.round_treatment_key in t1_treatment_round_keys]
+            n_rounds = len([i for i in t1_rounds if i.datetime_end is not None])
+            total_rounds = len(t1_treatment_round_keys)
+            t1 = {'rounds': n_rounds, 'total': total_rounds}
+        elif len(started_sessions) > 1:
+            treatment_sessions.sort(key=lambda x: next((i.datetime_start for i in p_sessions if x.key == i.session_treatment_key), None))
+            t1_treatment_round_keys = MultitaskRoundTreatment.query(ancestor=treatment_sessions[0].key).fetch(keys_only=True)
+            t1_rounds = [r for r in p_rounds if r.round_treatment_key in t1_treatment_round_keys]
+            n_rounds = len([i for i in t1_rounds if i.datetime_end is not None])
+            total_rounds = len(t1_treatment_round_keys)
+            t1 = {'rounds': n_rounds, 'total': total_rounds}
 
-                t2_treatment_round_keys = MultitaskRoundTreatment.query(ancestor=treatment_sessions[1].key).fetch(keys_only=True)
-                t2_rounds = [r for r in p_rounds if r.round_treatment_key in t2_treatment_round_keys]
-                n_rounds = len([i for i in t2_rounds if i.datetime_end is not None])
-                total_rounds = len(t2_treatment_round_keys)
-                t2 = {'rounds': n_rounds, 'total': total_rounds}
+            t2_treatment_round_keys = MultitaskRoundTreatment.query(ancestor=treatment_sessions[1].key).fetch(keys_only=True)
+            t2_rounds = [r for r in p_rounds if r.round_treatment_key in t2_treatment_round_keys]
+            n_rounds = len([i for i in t2_rounds if i.datetime_end is not None])
+            total_rounds = len(t2_treatment_round_keys)
+            t2 = {'rounds': n_rounds, 'total': total_rounds}
 
-            if p.survey_result is not None:
-                survey_status = "Completed"
+        if p.survey_result is not None:
+            survey_status = "Completed"
 
-            list_of_participants.append({
-                'name': p.participant_id,
-                'risk_status': risk_status,
-                'tutorial_status': tutorial_status,
-                'practice_status': practice_status,
-                't1': t1,
-                't2': t2,
-                'survey_status': survey_status
-            })
-
+        list_of_participants.append({
+            'name': p.participant_id,
+            'risk_status': risk_status,
+            'tutorial_status': tutorial_status,
+            'practice_status': practice_status,
+            't1': t1,
+            't2': t2,
+            'survey_status': survey_status
+        })
     return list_of_participants
 
 @admin.route('/enable_risk_assessment/')
@@ -172,24 +171,23 @@ def reset_experiment():
 def get_earnings():
     experiment_name = request.args.get('experiment_name')
     list_of_earnings = []
-    with get_ndb_context():
-        experiment = ExperimentManagement.query(ExperimentManagement.experiment_name == experiment_name).fetch(1)[0]
-        list_of_participants = ParticipantInformation.query(ancestor=experiment.key).fetch()
-        for p in list_of_participants:
-            # could refactor this from the function in Summary.py to ensure consistency
-            this_list_of_earnings = [
-                ['Participation', AdminConstants.PARTICIPATION_FEE],
-                ['Lottery Winnings', AdminFunctions.get_lottery_winnings(participant=p)],
-                ['Fixed Wage Round', AdminConstants.PRACTICE_FEE],
-                ['Session 1', AdminFunctions.get_session_earnings(participant=p, session_index=0)],
-                ['Session 2', AdminFunctions.get_session_earnings(participant=p, session_index=1)]
-            ]
-            list_of_earnings.append([p.participant_id, sum([i[1] for i in this_list_of_earnings])])
+    experiment = ExperimentManagement.query(ExperimentManagement.experiment_name == experiment_name).fetch(1)[0]
+    list_of_participants = ParticipantInformation.query(ancestor=experiment.key).fetch()
+    for p in list_of_participants:
+        # could refactor this from the function in Summary.py to ensure consistency
+        this_list_of_earnings = [
+            ['Participation', AdminConstants.PARTICIPATION_FEE],
+            ['Lottery Winnings', AdminFunctions.get_lottery_winnings(participant=p)],
+            ['Fixed Wage Round', AdminConstants.PRACTICE_FEE],
+            ['Session 1', AdminFunctions.get_session_earnings(participant=p, session_index=0)],
+            ['Session 2', AdminFunctions.get_session_earnings(participant=p, session_index=1)]
+        ]
+        list_of_earnings.append([p.participant_id, sum([i[1] for i in this_list_of_earnings])])
 
-        template_values = {
-            'list_of_earnings': list_of_earnings,
-            'experiment_name': experiment_name
-        }
+    template_values = {
+        'list_of_earnings': list_of_earnings,
+        'experiment_name': experiment_name
+    }
     return make_response(render_template('Admin_DisplayEarnings.html', **template_values))
 
 @admin.route('/list_participants/')
@@ -245,9 +243,7 @@ def enable_survey():
         experiment = ndb.Key(urlsafe=e_key.encode()).get()
         experiment.survey_enabled = True
         experiment.put()
-
-        AdminFunctions.run_lottery(experiment)
-
+    AdminFunctions.run_lottery(experiment)
     return redirect(url_for('admin.admin_homepage', experiment=e_key,experiment_name=experiment_name))
 
 
@@ -369,7 +365,10 @@ class AdminFunctions:
     def generate_multitask_csv(experiment):
         data = []
         participants = ParticipantInformation.query(ancestor=experiment.key).fetch()
+        logging.info(f"Total participants: {len(participants)}")
+
         for p in participants:
+            logging.info(f"Processing participant {p.participant_id}")
             lotteries = ['L01', 'L02', 'L03', 'L04', 'L05', 'L06', 'L07', 'L08', 'L09', 'L10']
             aversion_switch = AdminFunctions.get_aversion_switch(p, lotteries)
             email = p.participant_id
@@ -384,6 +383,7 @@ class AdminFunctions:
                         logging.warning(f"Session treatment not found for session {s.key} of participant {email}")
                         continue
                     treatment_name = session_treatment.treatment_type
+                    logging.info(f"     Processing session {treatment_name} for participant {email}")
                     if treatment_name == SessionConstants.random_coefficient_string:
                         hard_dist = session_treatment.hard_payoff_distribution
                         easy_dist = session_treatment.easy_payoff_distribution
@@ -409,61 +409,68 @@ class AdminFunctions:
                             logging.warning(f"Session treatment key not found in treatment keys for participant {email}")
                             session_number = None
                     rounds = ParticipantMultitaskRound.query(ancestor=s.key)
-                    for r in rounds:
-                        r_treatment = r.round_treatment_key.get()
-                        r_number = r.round_number
-                        n_correct_hard = 0
-                        n_correct_easy = 0
-                        list_of_times_hard = []
-                        list_of_times_correct_hard = []
-                        list_of_times_easy = []
-                        list_of_times_correct_easy = []
-                        questions = SubmittedQuestion.query(ancestor=r.key)
-                        n_attempt_hard = 0
-                        n_attempt_easy = 0
-                        for q in questions:
-                            original = q.question_key.get()
-                            if original.difficulty == "hard":
-                                n_attempt_hard += 1
-                                if q.datetime_end and q.datetime_start:
-                                    list_of_times_hard.append(q.datetime_end - q.datetime_start)
-                                if q.submitted_answer == original.answer:
-                                    n_correct_hard += 1
-                                    list_of_times_correct_hard.append(q.datetime_end - q.datetime_start)
+                    logging.info(f"     Total rounds for session {s.key}: {len(rounds)}")
+                    try: 
+                        for r in rounds:
+                            r_treatment = r.round_treatment_key.get()
+                            r_number = r.round_number
+                            logging.info(f"          Processing round {r_number} for participant {email}")
+                            n_correct_hard = 0
+                            n_correct_easy = 0
+                            list_of_times_hard = []
+                            list_of_times_correct_hard = []
+                            list_of_times_easy = []
+                            list_of_times_correct_easy = []
+                            questions = SubmittedQuestion.query(ancestor=r.key).fetch()
+                            logging.info(f"          Total questions for round {r.key}: {len(questions)}")
+                            n_attempt_hard = 0
+                            n_attempt_easy = 0
+                            for q in questions:
+                                original = q.question_key.get()
+                                if original.difficulty == "hard":
+                                    n_attempt_hard += 1
+                                    if q.datetime_end and q.datetime_start:
+                                        list_of_times_hard.append(q.datetime_end - q.datetime_start)
+                                    if q.submitted_answer == original.answer:
+                                        n_correct_hard += 1
+                                        list_of_times_correct_hard.append(q.datetime_end - q.datetime_start)
+                                else:
+                                    n_attempt_easy += 1
+                                    if q.datetime_end and q.datetime_start:
+                                        list_of_times_easy.append(q.datetime_end - q.datetime_start)
+                                    if q.submitted_answer == original.answer:
+                                        n_correct_easy += 1
+                                        list_of_times_correct_easy.append(q.datetime_end - q.datetime_start)
+                            if treatment_name == SessionConstants.random_coefficient_string:
+                                production_value = n_correct_hard * hard_mean + n_correct_easy * easy_mean
+                            elif treatment_name == SessionConstants.constant_coefficient_string:
+                                production_value = n_correct_easy * r_treatment.easy_payoff + n_correct_hard * r_treatment.hard_payoff
+                            elif treatment_name == SessionConstants.practice_string:
+                                production_value = n_correct_hard * AdminConstants.CONSTANT_COEFFICIENTS_HARD + n_correct_easy * AdminConstants.CONSTANT_COEFFICIENTS_EASY
                             else:
-                                n_attempt_easy += 1
-                                if q.datetime_end and q.datetime_start:
-                                    list_of_times_easy.append(q.datetime_end - q.datetime_start)
-                                if q.submitted_answer == original.answer:
-                                    n_correct_easy += 1
-                                    list_of_times_correct_easy.append(q.datetime_end - q.datetime_start)
-                        if treatment_name == SessionConstants.random_coefficient_string:
-                            production_value = n_correct_hard * hard_mean + n_correct_easy * easy_mean
-                        elif treatment_name == SessionConstants.constant_coefficient_string:
-                            production_value = n_correct_easy * r_treatment.easy_payoff + n_correct_hard * r_treatment.hard_payoff
-                        elif treatment_name == SessionConstants.practice_string:
-                            production_value = n_correct_hard * AdminConstants.CONSTANT_COEFFICIENTS_HARD + n_correct_easy * AdminConstants.CONSTANT_COEFFICIENTS_EASY
-                        else:
-                            production_value = None
-                        data.append(
-                            [email, session_number, treatment_name, r_number,
-                            n_attempt_hard,
-                            n_correct_hard,
-                            HelperFunctions.mean_time(list_of_times_hard),
-                            HelperFunctions.mean_time(list_of_times_correct_hard),
-                            n_attempt_easy,
-                            n_correct_easy,
-                            HelperFunctions.mean_time(list_of_times_easy),
-                            HelperFunctions.mean_time(list_of_times_correct_easy),
-                            r_treatment.time_limit_minutes,
-                            (r.datetime_end - r.datetime_start).total_seconds(),
-                            r_treatment.easy_payoff,
-                            r_treatment.hard_payoff,
-                            session_treatment.hard_high_variance,
-                            hard_mean, ahard, bhard, easy_mean, aeasy, beasy,
-                            production_value,
-                            aversion_switch
-                            ])
+                                production_value = None
+                            data.append(
+                                [email, session_number, treatment_name, r_number,
+                                n_attempt_hard,
+                                n_correct_hard,
+                                HelperFunctions.mean_time(list_of_times_hard),
+                                HelperFunctions.mean_time(list_of_times_correct_hard),
+                                n_attempt_easy,
+                                n_correct_easy,
+                                HelperFunctions.mean_time(list_of_times_easy),
+                                HelperFunctions.mean_time(list_of_times_correct_easy),
+                                r_treatment.time_limit_minutes,
+                                (r.datetime_end - r.datetime_start).total_seconds(),
+                                r_treatment.easy_payoff,
+                                r_treatment.hard_payoff,
+                                session_treatment.hard_high_variance,
+                                hard_mean, ahard, bhard, easy_mean, aeasy, beasy,
+                                production_value,
+                                aversion_switch
+                                ])
+                    except Exception as e:
+                        logging.error(f"Error processing round {r.key}, round number {r_number} for participant {email}: {str(e)}")
+                        continue
                 except Exception as e:
                     logging.error(f"Error processing session {s.key} for participant {email}: {str(e)}")
                     continue
