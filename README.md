@@ -22,6 +22,7 @@ Payment parameters can be changed in the "admin_constants.py" file. This include
 
 Changing the parameters of the experiment, such as time in each round, number of rounds, difficulty of questions, etc. requires editing the python code. Around line 600 in "administrator.py", there is a static function "generate_experiment". Below is a snippet of that function with comments on what to adjust:
 
+```
  # Number of numbers to add in a "hard" question
    hard_n = 6
    # Number of digits for each number to be added in a "hard" question
@@ -64,3 +65,4 @@ Changing the parameters of the experiment, such as time in each round, number of
             
    # BE SURE TO UPDATE HERE AS WELL
    hard_payoff_generating_function_high_variance = lambda: random.uniform(0.08, 0.18)
+'''
