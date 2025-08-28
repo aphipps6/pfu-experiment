@@ -3,6 +3,8 @@ This experiment is an economic lab experiment intended to test how participants 
 
 # Setting Up Local App Engine Development Server
 
+Initial requirements: You must have Python 3.11 installed, as well as Java 21 or later.
+
 ## 1. Extract the application
 After downloading the repository, extract the files to your desired location:
 ```bash
@@ -15,8 +17,6 @@ If you don't have it already:
 - Run the installer and follow the prompts
 - Restart your terminal/command prompt after installation
   
-Note that this will require Java 21+ to be installed
-
 ## 3. Initialize Google Cloud SDK
 Set up authentication and default project:
 ```bash
