@@ -3,7 +3,7 @@ pfu-experiment
 This experiment is an economic lab experiment intended to test how participants allocate time between various inputs -- completing simple addition problems.
 
 # Admin Instructions:
-once the server is running, you can access the admin console at https:\\your-url.com\admin
+once the server is running, you can access the admin console at https://your-url.com/admin
 
 ## Admin Console
 1. Generating an experiment: Enter a unique name for your expeirment, and then click "Generate Experiment." This will create a full experiment with all the addition problems using the default settings for time, length of problems, etc. Once generated, the experiment is now "active" in the administrator's dashboard.
