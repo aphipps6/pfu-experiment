@@ -1,6 +1,60 @@
-pfu-experiment
 
 This experiment is an economic lab experiment intended to test how participants allocate time between various inputs -- completing simple addition problems.
+
+# Setting Up Local App Engine Development Server
+
+## 1. Extract the application
+After downloading the repository, extract the files to your desired location:
+```bash
+cd /path/to/your/project/folder
+```
+
+## 2. Install Google Cloud SDK
+If you don't have it already:
+- Download from https://cloud.google.com/sdk/docs/install
+- Run the installer and follow the prompts
+- Restart your terminal/command prompt after installation
+Note that this will require Java 21+ to be installed
+
+## 3. Initialize Google Cloud SDK
+Set up authentication and default project:
+```bash
+gcloud init
+```
+Follow the prompts to log in and select your Google Cloud project.
+
+## 4. Verify your project structure
+Make sure you're in the directory containing your `app.yaml` file:
+```bash
+ls app.yaml
+```
+You should see your Flask app files, HTML templates, and the `app.yaml` configuration.
+
+## 5. Install Python dependencies
+The project has a `requirements.txt` file:
+```bash
+pip install -r requirements.txt
+```
+
+## 6. Run the local development server
+```bash
+dev_appserver.py .
+```
+
+Or using the newer gcloud command:
+```bash
+gcloud app run app.yaml
+```
+
+## 7. Access your application
+Your app will be available at:
+- http://localhost:8080
+
+The development server automatically uses the Python version and dependencies specified in  `app.yaml` file.
+
+## Troubleshooting
+- **Port conflicts**: Use `--port=8081` to specify a different port
+- **Authentication issues**: Run `gcloud auth login` if needed
 
 # Admin Instructions:
 once the server is running, you can access the admin console at https://your-url.com/admin
