@@ -14,6 +14,7 @@ If you don't have it already:
 - Download from https://cloud.google.com/sdk/docs/install
 - Run the installer and follow the prompts
 - Restart your terminal/command prompt after installation
+  
 Note that this will require Java 21+ to be installed
 
 ## 3. Initialize Google Cloud SDK
