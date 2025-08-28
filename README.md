@@ -18,4 +18,49 @@ once the server is running, you can access the admin console at https:\\your-url
 5. "Generate Fake Participants": This is useful for debugging purposes, and it will automatically generate 10 fake participant emails for debugging purposes.
 
 Changing Parameters:
-Payment parameters can be changed in the "admin_constants.py" file.
+Payment parameters can be changed in the "admin_constants.py" file. This includes the value of time left on the clock, payments for participation, completing survey, etc
+
+Changing the parameters of the experiment, such as time in each round, number of rounds, difficulty of questions, etc. requires editing the python code. Around line 600 in "administrator.py", there is a static function "generate_experiment". Below is a snippet of that function with comments on what to adjust:
+
+ # Number of numbers to add in a "hard" question
+   hard_n = 6
+   # Number of digits for each number to be added in a "hard" question
+   hard_digits = 2
+   # Number of numbers to be added in an "easy" question
+   easy_n = 3
+   # Number of digits for each number in an "easy" question
+   easy_digits = 2
+            
+   # Just a name for this class of questions -- questions will be stored by this name.
+   # For consistency, these can be used repeatedly when generating experiments. If there
+   # already exists a "question class name", the program will automatically use the
+   # questions previously generated with that name.
+   question_class_name = "add_hn06d2_en03d2"
+   
+   # How many possible questions are there in a round
+   questions_per_round = 30
+   # How many rounds are there in Control and Treatment
+   number_of_rounds = 8
+   # What is the time limit of each round?
+   time_limit_minutes = 3
+   # What is the value of leaving time on the clock? (set in AdminConstants)
+   time_value = AdminConstants.TIME_VALUE
+
+   # Time allowed for the practice session
+   practice_time_limit = 2
+   # Number of rounds in the practice session
+   practice_n_rounds = 3
+   
+   generate_new_rc_rounds = True
+
+   # Set the lower and upper limits of the payoff distribution for hard questions in the "high Variance" treatment
+   a = 0.08
+   b = 0.18
+
+   # No need to adjust these
+   sigma_squared = (1 / 12 * (b - a)) ** 2
+   m = (b + a) / 2
+   hard_payoff_distribution_high_variance = dict(name='uniform', a=a, b=b, sigma_squared=sigma_squared, mean=m)
+            
+   # BE SURE TO UPDATE HERE AS WELL
+   hard_payoff_generating_function_high_variance = lambda: random.uniform(0.08, 0.18)
